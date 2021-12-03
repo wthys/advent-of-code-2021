@@ -23,15 +23,22 @@ def most_common(bits):
     return most[0]
 
 
-def gamma_epsilon(report):
+def gamma_epsilon(report, n=None):
     gamma = []
     epsilon = []
 
     epsmap = { "0" : "1", "1" : "0" }
+
+    if n is None:
+        n=len(report[0])
+    if n < 1:
+        raise ValueError("n must be at least 1")
+    if int(n) != n:
+        raise ValueError("n must be an int")
     
     #unzip the zipped list
-    series = zip(*report)
-    for bits in series:
+    series = list(zip(*report))
+    for bits in series[:n]:
         comm = most_common(bits)
         gamma.append(comm)
         epsilon.append(epsmap[comm])
@@ -46,7 +53,7 @@ def extract_rating(report, selector):
     if len(report) == 1:
         return report[0]
     
-    gamma, epsilon = gamma_epsilon(report)
+    gamma, epsilon = gamma_epsilon(report, 1)
 
     common_bit = selector(gamma, epsilon)[0]
 
@@ -63,7 +70,6 @@ def part_two(report):
     oxy = int(extract_rating(report, lambda g, e: g), 2)
     co2 = int(extract_rating(report, lambda g, e: e), 2)
 
-    print(f"oxy: {oxy:b}/{oxy:d}, co2: {co2:b}/{co2:d}")
     return oxy * co2
 
 
