@@ -37,8 +37,11 @@ def gamma_epsilon(report, n=None):
         raise ValueError("n must be an int")
     
     #unzip the zipped list
-    series = list(zip(*report))
-    for bits in series[:n]:
+    series = zip(*report)
+    for i, bits in enumerate(series):
+        if i >= n:
+            break
+
         comm = most_common(bits)
         gamma.append(comm)
         epsilon.append(epsmap[comm])
