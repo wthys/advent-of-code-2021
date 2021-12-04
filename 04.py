@@ -80,8 +80,8 @@ def part_one(drawn, boards):
         for i, board in enumerate(boards):
             score = board.score(current_drawn)
             if score >= 0:
-                print(f"drawn: {current_drawn}, board: {i+1}")
-                print(board)
+                #print(f"drawn: {current_drawn}, board: {i+1}")
+                #print(board)
                 return score
 
 
