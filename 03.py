@@ -73,7 +73,7 @@ def part_two(report):
 
 
 def main():
-    report = read_input(lambda _, x: x.strip())
+    report = read_input(lambda x: x.strip())
 
     print(f"part1: {part_one(report)}")
     print(f"part2: {part_two(report)}")

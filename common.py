@@ -2,9 +2,12 @@
 
 import fileinput
 
+def ident(something):
+    return something
+
 def read_input(transform = None):
     if transform is None:
-        transform = lambda _, x: x
+        transform = ident
 
     with fileinput.input() as content:
-        return [ transform(i, line) for i, line in enumerate(content) ]
+        return [ transform(line) for line in content ]

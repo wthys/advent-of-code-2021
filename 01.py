@@ -35,7 +35,7 @@ def count_increases(measurements):
 
 
 def main():
-    measurements = read_input(lambda _, x: int(x))
+    measurements = read_input(int)
     print(f"part1: {count_increases(differences(measurements))}")
     print(f"part2: {count_increases(diff_n(measurements, 3))}")
 

@@ -58,7 +58,7 @@ def travel(commands, cmd_dir):
 
 
 def main():
-    commands = read_input(lambda _, x: parse_command(x))
+    commands = read_input(parse_command)
 
     sol1 = travel(commands, part1_cmddir())
     print(f"part1: {sol1.x * sol1.y}")
