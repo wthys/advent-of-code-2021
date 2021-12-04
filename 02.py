@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-import sys
 import re
 
 from collections import namedtuple
+
+from common import read_input
 
 Command = namedtuple('Command', ['command', 'distance'])
 Position = namedtuple('Position', ['x', 'y', 'aim'])
@@ -16,11 +17,6 @@ def parse_command(cmd):
         return None
 
     return Command(m.group('command'), int(m.group('distance')))
-
-
-def read_input(filename):
-    with open(filename) as content:
-        return [parse_command(line) for line in content]
 
 
 def part1_cmddir():
@@ -61,8 +57,8 @@ def travel(commands, cmd_dir):
     return position
 
 
-def main(filename):
-    commands = read_input(filename)
+def main():
+    commands = read_input(lambda _, x: parse_command(x))
 
     sol1 = travel(commands, part1_cmddir())
     print(f"part1: {sol1.x * sol1.y}")
@@ -72,4 +68,4 @@ def main(filename):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main()

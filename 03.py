@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 
-import sys
 from collections import Counter
 
-
-def read_input(filename):
-    with open(filename) as content:
-        return [line.strip() for line in content]
+from common import read_input
 
 
 def most_common(bits):
@@ -76,12 +72,12 @@ def part_two(report):
     return oxy * co2
 
 
-def main(filename):
-    report = read_input(filename)
+def main():
+    report = read_input(lambda _, x: x.strip())
 
     print(f"part1: {part_one(report)}")
     print(f"part2: {part_two(report)}")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main()

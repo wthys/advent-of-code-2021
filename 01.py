@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 
-import sys
-
-
-def read_input(filename):
-    with open(filename) as content:
-        return [int(line) for line in content]
+from common import read_input
 
 
 def differences(measurements):
@@ -39,11 +34,11 @@ def count_increases(measurements):
     return len([x for x in measurements if x > 0])
 
 
-def main(filename):
-    measurements = read_input(filename)
+def main():
+    measurements = read_input(lambda _, x: int(x))
     print(f"part1: {count_increases(differences(measurements))}")
     print(f"part2: {count_increases(diff_n(measurements, 3))}")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main()

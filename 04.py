@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import sys
-
 from itertools import chain, compress
+
+from common import read_input
 
 
 class BingoBoard:
@@ -54,24 +54,24 @@ class BingoBoard:
 -----END BOARD-----"""
 
 
-def read_input(filename):
-    with open(filename) as content:
-        drawn = []
-        boards = []
-        board = None
-        for i, line in enumerate(content):
-            if i == 0:
-                drawn = [ int(x) for x in line.strip().split(',') ]
-            elif i % 6 == 1:
-                if board is not None:
-                    boards.append(BingoBoard(board))
-                board = []
-            else:
-                board.append([ int(x) for x in line.strip().split()])
-        if board is not None:
-            boards.append(BingoBoard(board))
+def parse_input():
+    content = read_input()
+    drawn = []
+    boards = []
+    board = None
+    for i, line in enumerate(content):
+        if i == 0:
+            drawn = [ int(x) for x in line.strip().split(',') ]
+        elif i % 6 == 1:
+            if board is not None:
+                boards.append(BingoBoard(board))
+            board = []
+        else:
+            board.append([ int(x) for x in line.strip().split()])
+    if board is not None:
+        boards.append(BingoBoard(board))
 
-        return drawn, boards
+    return drawn, boards
 
 
 def part_one(drawn, boards):
@@ -96,8 +96,8 @@ def part_two(drawn, boards):
     
                 
 
-def main(args):
-    drawn, boards = read_input(args[1])
+def main():
+    drawn, boards = parse_input()
 
     #print(f"drawn: {drawn}")
     #print("boards:")
@@ -109,4 +109,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
