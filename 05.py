@@ -6,10 +6,7 @@ from collections import namedtuple, Counter
 from functools import lru_cache as cache
 from itertools import chain
 
-from common import read_input, sign
-
-
-Point = namedtuple('Point', ['x','y'])
+from common import read_input, Point, interpolate_points
 
 
 class Vent:
@@ -34,23 +31,7 @@ class Vent:
 
 
     def interpoints(self):
-
-        if self.is_horizontal():
-            x = self.start.x
-            s, e = sorted([self.start.y, self.end.y])
-            return [Point(x, y) for y in range(s, e+1)]
-
-        if self.is_vertical():
-            y = self.start.y
-            s, e = sorted([self.start.x, self.end.x])
-            return [Point(x, y) for x in range(s, e+1)]
-
-        diffx = self.end.x - self.start.x
-        diffy = self.end.y - self.start.y
-
-        return [ Point(int(self.start.x + i * sign(diffx)), int(self.start.y + i * sign(diffy))) for i in range(abs(diffx)+1) ]
-
-        return []
+        return interpolate_points(self.start, self.end)
 
 
     def __str__(self):
