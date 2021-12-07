@@ -3,7 +3,6 @@
 from itertools import chain
 
 from common import read_input
-from functools import lru_cache
 
 
 def parse_crabs(source):
