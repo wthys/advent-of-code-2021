@@ -35,12 +35,10 @@ class HeightMap:
     def find_neejbers(self, x, y, func):
         neejbers = [(x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)]
 
-        found = []
-        for (i, j) in neejbers:
-            if func(i, j):
-                found += [(i, j)]
+        def ffunc(pos):
+            return func(pos[0], pos[1])
 
-        return found
+        return list(filter(ffunc, neejbers))
 
 
     def find_minima(self):
