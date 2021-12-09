@@ -36,18 +36,18 @@ class HeightMap:
         neejbers = [(x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)]
 
         def ffunc(pos):
-            return func(pos[0], pos[1])
+            return func(*pos)
 
         return list(filter(ffunc, neejbers))
 
 
     def find_minima(self):
-        minima = []
-        for (x, y) in list(self.height_map.keys()):
-            if len(self.find_lower(x, y)) == 0:
-                minima += [(x, y)]
 
-        return minima
+        def is_lowest(pos):
+            return len(self.find_lower(*pos)) == 0
+
+        # not directly over keys because find_lower seems to modify the dict
+        return list(filter(is_lowest, list(self.height_map.keys())))
 
 
     def find_basins(self):
