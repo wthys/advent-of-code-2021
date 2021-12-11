@@ -25,6 +25,17 @@ def sign(value):
     return value/abs(value)
 
 
+def neejbers(x, y, /, diagonal = None):
+    if diagonal is None or diagonal:
+        return [
+                (x - 1, y - 1), (x + 0, y - 1), (x + 1, y - 1),
+                (x - 1, y + 0),                 (x + 1, y + 0),
+                (x - 1, y + 1), (x + 0, y + 1), (x + 1, y + 1)
+                ]
+    else:
+        return [ (x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1) ]
+
+
 def interpolate_points(start: Point, end: Point):
     diffx = end.x - start.x
     diffy = end.y - start.y
