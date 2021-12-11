@@ -67,7 +67,15 @@ def part_one(octopi):
 
 
 def part_two(octopi):
-    return 'n/a'
+    grid = octogrid(octopi)
+
+    step = 0
+    flashes = 0
+    while len(grid) != flashes:
+        grid, flashes = step_octopi(grid)
+        step += 1
+
+    return step
 
 
 def parse_line(line):
