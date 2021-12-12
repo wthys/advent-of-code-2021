@@ -27,7 +27,7 @@ class School:
         return list(self.generations.elements())
 
     def size(self):
-        return sum(n for _, n in self.generations.items())
+        return self.generations.total()
 
     def __str__(self):
         return f"School({self.generations})"

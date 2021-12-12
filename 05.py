@@ -3,7 +3,7 @@
 import re
 
 from collections import namedtuple, Counter
-from functools import lru_cache as cache
+from functools import cache
 from itertools import chain
 
 from common import read_input, Point, interpolate_points
