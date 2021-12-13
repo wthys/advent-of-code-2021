@@ -38,11 +38,16 @@ class Sheet:
 
         for j in range(bottom_size + 1):
             for i in range(bounds[0].x, bounds[1].x + 1):
+                orig = Position(i, y + j)
+                dest = Position(i, y - j)
+
                 if j > 0:
-                    n = self.contents[Position(i, y + j)]
+                    n = self.contents[orig]
                     if n > 0:
-                        self.contents[Position(i, y - j)] += n
-                del self.contents[Position(i, y + j)]
+                        self.contents[dest] += n
+
+                if orig in self.contents:
+                    del self.contents[orig]
 
 
     def foldX(self, x):
@@ -53,26 +58,35 @@ class Sheet:
 
         for i in range(right_size + 1):
             for j in range(bounds[0].y, bounds[1].y + 1):
+                orig = Position(x + i, j)
+                dest = Position(x - i, j)
+
                 if i > 0:
-                    n = self.contents[Position(x + i, j)]
+                    n = self.contents[orig]
                     if n > 0:
-                        self.contents[Position(x - i, j)] += n
-                del self.contents[Position(x + i, j)]
+                        self.contents[dest] += n
+
+                if orig in self.contents:
+                    del self.contents[orig]
 
 
     def __str__(self):
         bounds = self.bounds()
 
-        sheet = []
+        topbot = "+" + "-" * (bounds[1].x - bounds[0].x + 1) + "+"
+
+        sheet = [topbot]
         for j in range(bounds[0].y, bounds[1].y + 1):
-            line = ""
+            line = "|"
             for i in range(bounds[0].x, bounds[1].x + 1):
                 n = self.contents[Position(i, j)]
                 if n > 0:
                     line += '#'
                 else:
-                    line += '.'
+                    line += ' '
+            line += "|"
             sheet.append(line)
+        sheet.append(topbot)
 
         return "\n".join(sheet)
 
@@ -83,9 +97,6 @@ def part_one(page):
     dots, instructions = page
     sheet = Sheet(dots)
 
-    print("== start sheet ==")
-    print(sheet)
-
     match instructions[0]:
         case Fold('x', x):
             sheet.foldX(x)
@@ -94,14 +105,24 @@ def part_one(page):
         case _:
             pass
 
-    print(f"== sheet after first fold ({instructions[0]}) ==")
-    print(sheet)
-
     return sheet.count_dots()
 
 
 def part_two(page):
-    return 'n/a'
+    dots, instructions = page
+    sheet = Sheet(dots)
+
+    for instr in instructions:
+        match instr:
+            case Fold('x', x):
+                sheet.foldX(x)
+            case Fold('y', y):
+                sheet.foldY(y)
+            case _:
+                pass
+
+    print(sheet)
+    return '☝'
 
 
 def parse_page():
@@ -132,7 +153,7 @@ def parse_page():
 def main():
     page = parse_page()
 
-    print(page)
+    #print(page)
 
     print(f"part1: {part_one(page)}")
     print(f"part2: {part_two(page)}")
