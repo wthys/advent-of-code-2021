@@ -8,7 +8,7 @@ DAY="$(echo 0$1 | sed 's/.*\(..\)$/\1/')"
 
 INPUT="$2"
 
-RUNDAY="python3 $DAY.py"
+RUNDAY="python3 -u $DAY.py"
 
 case $INPUT in
     input)
