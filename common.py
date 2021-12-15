@@ -10,6 +10,9 @@ Point = namedtuple('Point', ['x', 'y'])
 def ident(something):
     return something
 
+def clean(something):
+    return something.strip()
+
 
 def read_input(transform = None):
     if transform is None:
