@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from common import read_input, Point, clean, neejbers
+from common import read_input, Point, neejbers, color, intlist
 
 from collections import namedtuple, defaultdict
-from itertools import pairwise
+from itertools import pairwise, product
 
 
 Edge = namedtuple('Edge', ['start', 'end', 'cost'])
@@ -11,8 +11,7 @@ Edge = namedtuple('Edge', ['start', 'end', 'cost'])
 
 class Graph:
     def __init__(self, edges):
-        self.iE = defaultdict(lambda: defaultdict(lambda: float('inf')))
-        self.oE = defaultdict(lambda: defaultdict(lambda: float('inf')))
+        self.G = defaultdict(lambda: defaultdict(lambda: float('inf')))
         self.V = set()
 
         if edges is not None:
@@ -20,8 +19,8 @@ class Graph:
                 self.V.add(edge.start)
                 self.V.add(edge.end)
 
-                self.iE[edge.end][edge.start] = edge.cost 
-                self.oE[edge.start][edge.end] = edge.cost
+                self.G[edge.start][edge.end] = edge.cost
+
 
     def shortest_path(self, start, end):
         Q = set(self.V)
@@ -29,16 +28,24 @@ class Graph:
         prev = defaultdict(lambda: None)
         dist[start] = 0
 
+        
         while len(Q) > 0:
             u = sorted(Q, key=lambda v: dist[v])[0]
             Q.remove(u)
 
-            for v, cost in self.oE[u].items():
+            print(f"to check: {len(Q)}  ", end = "\r")
+
+            for v, cost in self.G[u].items():
                 if v in Q:
                     alt = dist[u] + cost
                     if alt < dist[v]:
                         dist[v] = alt
                         prev[v] = u
+
+            if u == end:
+                break
+
+        print(f"\rdone!                     ")
 
         path = []
         u = end
@@ -49,55 +56,146 @@ class Graph:
         return path
 
 
+    def shortest_path_astar(self, start, end):
+
+        def hfunc(node):
+            return abs(node.x - end.x) + abs(node.y - end.y)
+
+        Q = set([start])
+        prev = dict()
+        
+        g = defaultdict(lambda: float('inf'))
+        g[start] = 0
+
+        f = defaultdict(lambda: float('inf'))
+        f[start] = hfunc(start)
+
+        def construct_path(node):
+            path = []
+            while node in prev:
+                path.insert(0, node)
+                node = prev[node]
+            path.insert(0, node)
+            return path
+
+        while len(Q) > 0:
+            u = sorted(Q, key=lambda n: f[n])[0]
+            
+            if u == end:
+                print("done!"+ " "*20)
+                return construct_path(u)
+
+            print(f"h({u.x: 3d}, {u.y: 3d}) = {hfunc(u): 4d}   ", end = "\r")
+
+            Q.remove(u)
+            for v, cost in self.G[u].items():
+                alt = g[u] + cost
+                if alt < g[v]:
+                    prev[v] = u
+                    g[v] = alt
+                    f[v] = alt + hfunc(v)
+                    if v not in Q:
+                        Q.add(v)
+
+        return None
+
+
     def path_cost(self, path):
-        return sum( self.oE[s][e] for s, e in pairwise(path) )
+        costs = [ self.G[s][e] for s, e in pairwise(path) ]
+        return sum( costs )
 
 
-def sane_neejbers(p, dims):
-    nbh = [ Point(x, y) for x, y in neejbers(p.x, p.y, diagonal=False) ]
-    return list(filter(lambda pt: pt.x in range(dims.x + 1) and pt.y in range(dims.y + 1), nbh))
 
 
-def parse_content(content):
-    grid = defaultdict(lambda: 10**100)
-
-    dims = Point(len(content[0]), len(content))
+def graph_from_grid(grid):
+    dims = Point(len(grid[0]), len(grid))
     
-    for j, row in enumerate(content):
-        for i, value in enumerate(row):
-            grid[Point(i, j)] = value
-
     edges = []
-    
-    for p in list(grid.keys()):
-        for n in sane_neejbers(p, dims):
-            edges.append(Edge(p, n, grid[n]))
+    for i, j in product(range(dims.x), range(dims.y)):
+        p = Point(i, j)
+        for ni, nj in neejbers(i, j, diagonal=False):
+            n = Point(ni, nj)
+            try:
+                edges.append(Edge(p, n, grid[n.y][n.x]))
+            except IndexError:
+                pass
 
-    graph = Graph(edges)
+    return Graph(edges)
 
-    return grid, graph
+
+def pretty_grid_path(grid, path):
+    return
+
+    print("+" + "-" * len(grid[0]) + "+")
+    for j, row in enumerate(grid):
+        line = ""
+        for i, value in enumerate(row):
+            if Point(i, j) in path:
+                line += f"{color.BOLD + color.RED}{value}{color.END}"
+            else:
+                line += f"{value}"
+
+        print(f"|{line}|")
+            
+    print("+" + "-" * len(grid[0]) + "+")
+
         
 
 
 def part_one(content):
-    grid, graph = parse_content(content)
+    graph = graph_from_grid(content)
 
     start = Point(0, 0)
     end = Point(len(content[0]) - 1, len(content) - 1)
 
     path = graph.shortest_path(start, end)
-    print(f"shortest path: {path}")
+    
+    pretty_grid_path(content, path)
 
     cost = graph.path_cost(path)
     return cost
 
 
 def part_two(content):
-    return 'n/a'
+
+    dims = Point(len(content[0]), len(content))
+
+    # expand grid
+    grid = [ list( int() for _ in range(dims.x * 5) ) for _ in
+            range(dims.y * 5) ]
+
+    def dist(s, e):
+        return abs(e.x - s.x) + abs(e.y - s.y)
+
+    def risk_wrap(risk):
+        nrisk = risk % 9
+        if nrisk == 0:
+            return 9
+        return nrisk
+
+    for X, Y in product(range(5), range(5)):
+        for y, row in enumerate(content):
+            for x, risk in enumerate(row):
+                i = dims.x * X + x
+                j = dims.y * Y + y
+                grid[j][i] = risk_wrap(risk + dist(Point(0,0), Point(X, Y)))
+
+
+    graph = graph_from_grid(grid)
+
+    start = Point(0, 0)
+    end = Point(dims.x * 5 - 1, dims.y * 5 - 1)
+
+    path = graph.shortest_path_astar(start, end)
+
+    pretty_grid_path(grid, path)
+
+    cost = graph.path_cost(path)
+    return cost
 
 
 if __name__ == "__main__":
-    content = read_input(lambda line: list(map(int, line.strip())))
+    content = read_input(lambda line: intlist(line.strip()))
 
     print(f"part 1: {part_one(content)}")
     print(f"part 2: {part_two(content)}")
