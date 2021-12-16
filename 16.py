@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 
+import operator
+from functools import reduce
+
 from common import read_input
 
-
-HEX2BIN = {"0": "0000"}
 
 class Transmission:
     def __init__(self, hexa):
         self._hex = hexa
         self._bits = "".join( f"{int(x,16):04b}" for x in hexa )
 
-
     @property
     def hex(self):
         return self._hex
-
 
     @property
     def bits(self):
@@ -41,6 +40,9 @@ class Packet:
     def is_operator(self):
         return not self.is_literal()
 
+    def calculate(self):
+        raise NotImplemented()
+
 
 class LiteralPacket(Packet):
     def __init__(self, literal, **kwds):
@@ -50,6 +52,12 @@ class LiteralPacket(Packet):
     @property
     def literal(self):
         return self._literal
+
+    def calculate(self):
+        return self.literal
+
+    def sum_version(self):
+        return self.version
 
     def __str__(self):
         return f"LiteralPacket(v={self.version}, t={self.type}, lit={self.literal})"
@@ -68,6 +76,27 @@ class OperatorPacket(Packet):
     @property
     def packets(self):
         return self._packets[:]
+
+    def calculate(self):
+        results = [ p.calculate() for p in self.packets ]
+        match self.type:
+            case 0:
+                return sum(results)
+            case 1:
+                return reduce(operator.mul, results, 1)
+            case 2:
+                return min(results)
+            case 3:
+                return max(results)
+            case 5:
+                return [0, 1][results[0] > results[1]]
+            case 6:
+                return [0, 1][results[0] < results[1]]
+            case 7:
+                return [0, 1][results[0] == results[1]]
+
+    def sum_version(self):
+        return self.version + sum( p.sum_version() for p in self._packets )
 
     def __str__(self):
         pkts = ", ".join(str(p) for p in self.packets)
@@ -129,11 +158,6 @@ def parse_transmission(source):
     return Transmission(source.strip())
 
 
-def walk_packet(packet, func):
-    if packet.is_operator():
-        for p in packet.packets:
-            walk_packet(p, func)
-    func(packet)
 
 
 class Accumulator:
@@ -148,24 +172,16 @@ class Accumulator:
 
 
 def part_one(transmission):
-    print(f"DEBUG: {transmission.hex} -> {transmission.bits}")
-
     packet, remainder = decode_packet(transmission.bits)
-    print(f"  remainder: {remainder}")
-    print(f"  packet: {packet}")
 
-    total_version = Accumulator(0)
-
-    def sum_version(packet):
-        total_version.accumulate(packet.version)
-
-    walk_packet(packet, sum_version)
-
-    return total_version.total()
+    return packet.sum_version()
 
 
 def part_two(transmission):
-    return 'n/a'
+    packet, remainder = decode_packet(transmission.bits)
+
+
+    return packet.calculate()
 
 
 def main():
