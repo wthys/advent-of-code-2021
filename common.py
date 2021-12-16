@@ -1,10 +1,24 @@
 #!/usr/bin/env python3
 
 import fileinput
-from collections import namedtuple
+
+from collections import Counter
+from dataclasses import dataclass
+from typing import List
 
 
-Point = namedtuple('Point', ['x', 'y'])
+@dataclass(frozen=True)
+class Point:
+    x: int
+    y: int
+
+    def subtract(self, other):
+        match other:
+            case Point(_, _):
+                return Point(self.x - other.x, self.y - other.y)
+            case _:
+                raise ValueError(f"other is not a Point (got {type(other)})")
+
 
 class color:
     PURPLE = '\033[95m'
@@ -18,6 +32,7 @@ class color:
     UNDERLINE = '\033[4m'
     END = '\033[0m'
 
+
 def ident(something):
     return something
 
@@ -26,6 +41,13 @@ def clean(something):
 
 def intlist(something):
     return list(map(int, something))
+
+def combine(*funcs):
+    def comb(something):
+        for f in reversed(funcs):
+            something = f(something)
+        return something
+    return comb
 
 
 def read_input(transform = None):
@@ -53,23 +75,21 @@ def neejbers(x, y, /, diagonal = None):
         return [ (x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1) ]
 
 
-def interpolate_points(start: Point, end: Point):
-    diffx = end.x - start.x
-    diffy = end.y - start.y
+def interpolate_points(start, end):
+    diff = end.subtract(start)
 
-    if diffx == 0:
-        dy = int(sign(diffy))
+    if diff.x == 0:
+        dy = int(sign(diff.y))
         return [ Point(start.x, y) for y in range(start.y, end.y + dy, dy) ]
 
-    if diffy == 0:
-        dx = int(sign(diffx))
+    if diff.y == 0:
+        dx = int(sign(diff.x))
         return [ Point(x, start.y) for x in range(start.x, end.x + dx, dx) ]
 
-    if abs(diffx) == abs(diffy):
-        dx = int(sign(diffx))
-        dy = int(sign(diffy))
+    if abs(diff.x) == abs(diff.y):
+        dx = int(sign(diff.x))
+        dy = int(sign(diff.y))
 
         return [ Point(x, y) for x, y in zip(range(start.x, end.x + dx, dx), range(start.y, end.y + dy, dy)) ]
 
-    raise ValueError(f"line slope not supported ({diffx}:{diffy})")
-
+    raise ValueError(f"line slope not supported ({diff.x}:{diff.y})")

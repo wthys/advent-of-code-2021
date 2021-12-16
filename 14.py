@@ -122,7 +122,7 @@ def part_one(engine):
     reactor = Reactor(reactions)
 
     ctr = reactor.react4(template, 10)
-    print(ctr)
+    #print(ctr)
 
     most = ctr.most_common(1)[0]
     least = ctr.most_common()[-1]

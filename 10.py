@@ -10,6 +10,7 @@ EXPECTED = { "(" : ")", "{" : "}", "<" : ">", "[" : "]" }
 
 NavSyntaxError = namedtuple('NavSyntaxError', ['idx', 'char'])
 
+
 def find_error(line):
     context = []
 

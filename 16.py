@@ -158,19 +158,6 @@ def parse_transmission(source):
     return Transmission(source.strip())
 
 
-
-
-class Accumulator:
-    def __init__(self, initial):
-        self._total = initial
-
-    def accumulate(self, value):
-        self._total += value
-
-    def total(self):
-        return self._total
-
-
 def part_one(transmission):
     packet, remainder = decode_packet(transmission.bits)
 
@@ -179,7 +166,6 @@ def part_one(transmission):
 
 def part_two(transmission):
     packet, remainder = decode_packet(transmission.bits)
-
 
     return packet.calculate()
 

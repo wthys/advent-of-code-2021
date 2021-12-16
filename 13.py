@@ -2,14 +2,16 @@
 
 import re
 
-from common import read_input
+from common import read_input, Point
 
-from collections import namedtuple, Counter, defaultdict
+from collections import defaultdict
+from dataclasses import dataclass
 
 
-Position = namedtuple('Position', ['x', 'y'])
-Fold = namedtuple('Fold', ['direction', 'coordinate'])
-
+@dataclass(frozen=True)
+class Fold:
+    direction: str
+    coordinate: int
 
 
 class Sheet:
@@ -19,27 +21,24 @@ class Sheet:
         for dot in dots:
             self.contents[dot] += 1
 
-
     def bounds(self):
         xs = list(sorted( dot.x for dot in self.contents.keys() ))
         ys = list(sorted( dot.y for dot in self.contents.keys() ))
 
-        return (Position( xs[0], ys[0]), Position(xs[-1], ys[-1]))
+        return (Point(xs[0], ys[0]), Point(xs[-1], ys[-1]))
 
     def count_dots(self):
         return len([ n for n in self.contents.values() if n > 0 ])
 
-
     def foldY(self, y):
-
         bounds = self.bounds()
 
         bottom_size = bounds[1].y - y
 
         for j in range(bottom_size + 1):
             for i in range(bounds[0].x, bounds[1].x + 1):
-                orig = Position(i, y + j)
-                dest = Position(i, y - j)
+                orig = Point(i, y + j)
+                dest = Point(i, y - j)
 
                 if j > 0:
                     n = self.contents[orig]
@@ -49,17 +48,15 @@ class Sheet:
                 if orig in self.contents:
                     del self.contents[orig]
 
-
     def foldX(self, x):
-
         bounds = self.bounds()
 
         right_size = bounds[1].x - x
 
         for i in range(right_size + 1):
             for j in range(bounds[0].y, bounds[1].y + 1):
-                orig = Position(x + i, j)
-                dest = Position(x - i, j)
+                orig = Point(x + i, j)
+                dest = Point(x - i, j)
 
                 if i > 0:
                     n = self.contents[orig]
@@ -69,17 +66,25 @@ class Sheet:
                 if orig in self.contents:
                     del self.contents[orig]
 
+    def fold(self, instruction):
+        match instruction:
+            case Fold('x', x):
+                self.foldX(x)
+            case Fold('y', y):
+                self.foldY(y)
+            case _:
+                pass
 
     def __str__(self):
         bounds = self.bounds()
 
-        topbot = "+" + "-" * (bounds[1].x - bounds[0].x + 1) + "+"
+        topbot = "+" + "-" * abs(bounds[1].x - bounds[0].x + 1) + "+"
 
         sheet = [topbot]
         for j in range(bounds[0].y, bounds[1].y + 1):
             line = "|"
             for i in range(bounds[0].x, bounds[1].x + 1):
-                n = self.contents[Position(i, j)]
+                n = self.contents[Point(i, j)]
                 if n > 0:
                     line += '#'
                 else:
@@ -91,19 +96,11 @@ class Sheet:
         return "\n".join(sheet)
 
 
-
-
 def part_one(page):
     dots, instructions = page
     sheet = Sheet(dots)
 
-    match instructions[0]:
-        case Fold('x', x):
-            sheet.foldX(x)
-        case Fold('y', y):
-            sheet.foldY(y)
-        case _:
-            pass
+    sheet.fold(instructions[0])
 
     return sheet.count_dots()
 
@@ -113,13 +110,7 @@ def part_two(page):
     sheet = Sheet(dots)
 
     for instr in instructions:
-        match instr:
-            case Fold('x', x):
-                sheet.foldX(x)
-            case Fold('y', y):
-                sheet.foldY(y)
-            case _:
-                pass
+        sheet.fold(instr)
 
     print(sheet)
     return '☝'
@@ -142,12 +133,11 @@ def parse_page():
         else:
             m = re.match(r"([0-9]+),([0-9]+)", line)
             if m:
-                dots.append(Position(int(m.group(1)), int(m.group(2))))
+                dots.append(Point(int(m.group(1)), int(m.group(2))))
             else:
                 all_dots = True
 
     return (dots, instructions)
-                
     
 
 def main():
