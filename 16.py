@@ -95,11 +95,11 @@ class OperatorPacket(Packet):
             case 3:
                 return max(results)
             case 5:
-                return [0, 1][results[0] > results[1]]
+                return 1 if results[0] > results[1] else 0
             case 6:
-                return [0, 1][results[0] < results[1]]
+                return 1 if [results[0] < results[1] else 0
             case 7:
-                return [0, 1][results[0] == results[1]]
+                return 1 if [results[0] == results[1] else 0
 
     def sum_version(self):
         return self.version + sum( p.sum_version() for p in self._packets )
