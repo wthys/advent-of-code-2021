@@ -2,7 +2,7 @@
 
 import re
 
-from common import read_input, Point
+from common import read_input, Point, clean
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -122,9 +122,6 @@ def parse_page():
     
     all_dots = False
 
-    def clean(x):
-        return x.strip()
-
     for line in read_input(clean):
         if all_dots:
             m = re.match(r"fold along (?P<dir>[xy])=(?P<coord>[0-9]+)", line)
@@ -145,8 +142,8 @@ def main():
 
     #print(page)
 
-    print(f"part1: {part_one(page)}")
-    print(f"part2: {part_two(page)}")
+    print(f"part 1: {part_one(page)}")
+    print(f"part 2: {part_two(page)}")
 
 
 if __name__ == "__main__":

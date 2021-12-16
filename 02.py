@@ -61,10 +61,10 @@ def main():
     commands = read_input(parse_command)
 
     sol1 = travel(commands, part1_cmddir())
-    print(f"part1: {sol1.x * sol1.y}")
+    print(f"part 1: {sol1.x * sol1.y}")
 
     sol2 = travel(commands, part2_cmddir())
-    print(f"part2: {sol2.x * sol2.y}")
+    print(f"part 2: {sol2.x * sol2.y}")
 
 
 if __name__ == "__main__":

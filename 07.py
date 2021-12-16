@@ -47,8 +47,8 @@ def part_two(crabs):
 def main():
     crabs = list(chain(*read_input(parse_crabs)))
 
-    print(f"part1: {part_one(crabs)}")
-    print(f"part2: {part_two(crabs)}")
+    print(f"part 1: {part_one(crabs)}")
+    print(f"part 2: {part_two(crabs)}")
 
 
 if __name__ == "__main__":

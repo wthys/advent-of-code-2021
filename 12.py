@@ -79,8 +79,8 @@ def main():
     # add in reverse edges
     edges += [ edge.reverse() for edge in edges ]
 
-    print(f"part1: {part_one(edges)}")
-    print(f"part2: {part_two(edges)}")
+    print(f"part 1: {part_one(edges)}")
+    print(f"part 2: {part_two(edges)}")
 
 
 if __name__ == "__main__":

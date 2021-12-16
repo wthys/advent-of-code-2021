@@ -85,8 +85,8 @@ def part_two(fishes):
 def main():
     fishes = list(chain(*read_input(parse_fishes)))
 
-    print(f"part1: {part_one(fishes)}")
-    print(f"part2: {part_two(fishes)}")
+    print(f"part 1: {part_one(fishes)}")
+    print(f"part 2: {part_two(fishes)}")
 
 
 if __name__ == "__main__":

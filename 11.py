@@ -84,8 +84,8 @@ def parse_line(line):
 
 def main():
     octopi = read_input(parse_line)
-    print(f"part1: {part_one(octopi)}")
-    print(f"part2: {part_two(octopi)}")
+    print(f"part 1: {part_one(octopi)}")
+    print(f"part 2: {part_two(octopi)}")
 
 
 if __name__ == "__main__":

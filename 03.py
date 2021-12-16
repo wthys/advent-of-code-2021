@@ -2,7 +2,7 @@
 
 from collections import Counter
 
-from common import read_input
+from common import read_input, clean
 
 
 def most_common(bits):
@@ -73,10 +73,10 @@ def part_two(report):
 
 
 def main():
-    report = read_input(lambda x: x.strip())
+    report = read_input(clean)
 
-    print(f"part1: {part_one(report)}")
-    print(f"part2: {part_two(report)}")
+    print(f"part 1: {part_one(report)}")
+    print(f"part 2: {part_two(report)}")
 
 
 if __name__ == "__main__":

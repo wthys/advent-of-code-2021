@@ -97,8 +97,8 @@ def part_two(readings):
 def main():
     readings = read_input(parse_line)
 
-    print(f"part1: {part_one(readings)}")
-    print(f"part2: {part_two(readings)}")
+    print(f"part 1: {part_one(readings)}")
+    print(f"part 2: {part_two(readings)}")
 
 
 if __name__ == "__main__":

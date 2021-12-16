@@ -2,7 +2,7 @@
 
 import re
 
-from common import read_input
+from common import read_input, clean
 
 from collections import Counter
 from itertools import pairwise
@@ -146,9 +146,6 @@ def part_two(engine):
 def parse_input(source = None):
     template = ""
     reactions = []
-    
-    def clean(x):
-        return x.strip()
 
     if source is None:
         contents = read_input(clean)
@@ -171,8 +168,8 @@ def parse_input(source = None):
 def main():
     engine = parse_input()
 
-    print(f"part1: {part_one(engine)}")
-    print(f"part2: {part_two(engine)}")
+    print(f"part 1: {part_one(engine)}")
+    print(f"part 2: {part_two(engine)}")
 
 
 if __name__ == "__main__":

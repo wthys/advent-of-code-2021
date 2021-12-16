@@ -2,7 +2,7 @@
 
 from itertools import chain, compress
 
-from common import read_input
+from common import read_input, clean
 
 
 class BingoBoard:
@@ -55,7 +55,7 @@ class BingoBoard:
 
 
 def parse_input():
-    content = read_input()
+    content = read_input(clean)
     drawn = []
     boards = []
     board = None

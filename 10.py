@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from common import read_input
+from common import read_input, clean
 
 from itertools import chain
 from collections import namedtuple
@@ -73,14 +73,10 @@ def part_two(source):
     return scores[len(scores)//2]
 
 
-def clean(source):
-    return source.strip()
-
-
 def main():
     source = read_input(clean)
-    print(f"part1: {part_one(source)}")
-    print(f"part2: {part_two(source)}")
+    print(f"part 1: {part_one(source)}")
+    print(f"part 2: {part_two(source)}")
 
 
 if __name__ == "__main__":

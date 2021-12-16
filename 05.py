@@ -88,8 +88,8 @@ def part_two(vents):
 def main():
     vents = read_input(parse_vent)
 
-    print(f"part1: {part_one(vents)}")
-    print(f"part2: {part_two(vents)}")
+    print(f"part 1: {part_one(vents)}")
+    print(f"part 2: {part_two(vents)}")
 
 
 if __name__ == "__main__":
