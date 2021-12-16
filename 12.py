@@ -1,27 +1,10 @@
 #!/usr/bin/env python3
 
-from common import read_input
-
-from collections import namedtuple, Counter, defaultdict
-
-
-Edge = namedtuple('Edge', ['start', 'end'])
+from common import read_input, Point, combine, clean
+from graph import Edge, Graph
 
 
-class Graph:
-    def __init__(self, edges):
-        self.G = defaultdict(set)
-        self.V = set()
-
-        if edges is not None:
-            for edge in edges:
-                self.V.add(edge.start)
-                self.V.add(edge.end)
-
-                self.G[edge.start].add(edge.end)
-                self.G[edge.end].add(edge.start)
-
-
+class GraphOne(Graph):
     def paths_between_util(self, node, dest, visited, path):
         visited[node] += 1
         path.append(node)
@@ -36,18 +19,11 @@ class Graph:
         if node == dest:
             yield list(path)
         else:
-            for neejber in (self.G[node] - meaningful_visits()):
+            for neejber in (self.neejbers(node) - meaningful_visits()):
                 yield from self.paths_between_util(neejber, dest, visited, path)
 
         path.pop()
         visited[node] -= 1
-
-
-    def paths_between(self, start, dest):
-        visited = Counter()
-        path = []
-
-        return list(self.paths_between_util(start, dest, visited, path))
 
 
 class GraphTwo(Graph):
@@ -69,7 +45,7 @@ class GraphTwo(Graph):
             if node == dest:
                 yield list(path)
             else:
-                for neejber in (self.G[node] - meaningful_visits()):
+                for neejber in (self.neejbers(node) - meaningful_visits()):
                     yield from self.paths_between_util(neejber, dest, visited, path)
 
             path.pop()
@@ -77,7 +53,7 @@ class GraphTwo(Graph):
 
 
 def part_one(edges):
-    caves = Graph(edges)
+    caves = GraphOne(edges)
 
     paths = caves.paths_between('start', 'end')
 
@@ -93,12 +69,16 @@ def part_two(edges):
 
 
 def parse_edge(line):
-    start, end = line.strip().split('-')
+    start, end = line.split('-')
     return Edge(start, end)
     
 
 def main():
-    edges = read_input(parse_edge)
+    edges = read_input(combine(parse_edge, clean))
+
+    # add in reverse edges
+    edges += [ edge.reverse() for edge in edges ]
+
     print(f"part1: {part_one(edges)}")
     print(f"part2: {part_two(edges)}")
 

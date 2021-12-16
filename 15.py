@@ -1,27 +1,13 @@
 #!/usr/bin/env python3
 
-from common import read_input, Point, neejbers, color, intlist
+from common import read_input, Point, neejbers, color, intlist, combine, clean
+from graph import Edge, Graph
 
 from collections import namedtuple, defaultdict
 from itertools import pairwise, product
 
 
-Edge = namedtuple('Edge', ['start', 'end', 'cost'])
-
-
-class Graph:
-    def __init__(self, edges):
-        self.G = defaultdict(lambda: defaultdict(lambda: float('inf')))
-        self.V = set()
-
-        if edges is not None:
-            for edge in edges:
-                self.V.add(edge.start)
-                self.V.add(edge.end)
-
-                self.G[edge.start][edge.end] = edge.cost
-
-
+class CaveGraph(Graph):
     def shortest_path(self, start, end):
         Q = set(self.V)
         dist = defaultdict(lambda: float('inf'))
@@ -85,7 +71,7 @@ class Graph:
                 print("done!"+ " "*20)
                 return construct_path(u)
 
-            print(f"h({u.x: 3d}, {u.y: 3d}) = {hfunc(u): 4d}   ", end = "\r")
+            print(f"h({u.x: 4d}, {u.y: 4d}) = {hfunc(u): 4d}   ", end = "\r")
 
             Q.remove(u)
             for v, cost in self.G[u].items():
@@ -120,7 +106,7 @@ def graph_from_grid(grid):
             except IndexError:
                 pass
 
-    return Graph(edges)
+    return CaveGraph(edges)
 
 
 def pretty_grid_path(grid, path):
@@ -134,9 +120,6 @@ def pretty_grid_path(grid, path):
                 line += f"{color.BOLD + color.RED}{value}{color.END}"
             else:
                 line += f"{value}"
-
-        print(f"|{line}|")
-            
     print("+" + "-" * len(grid[0]) + "+")
 
         
@@ -148,7 +131,7 @@ def part_one(content):
     start = Point(0, 0)
     end = Point(len(content[0]) - 1, len(content) - 1)
 
-    path = graph.shortest_path(start, end)
+    path = graph.shortest_path_astar(start, end)
     
     pretty_grid_path(content, path)
 
@@ -195,7 +178,7 @@ def part_two(content):
 
 
 if __name__ == "__main__":
-    content = read_input(lambda line: intlist(line.strip()))
+    content = read_input(combine(intlist, clean))
 
     print(f"part 1: {part_one(content)}")
     print(f"part 2: {part_two(content)}")
