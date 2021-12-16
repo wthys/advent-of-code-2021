@@ -6,7 +6,7 @@ from collections import namedtuple, Counter
 from functools import cache
 from itertools import chain
 
-from common import read_input, Point, interpolate_points
+from common import debug, read_input, Point, interpolate_points, color
 
 
 class Vent:
@@ -40,8 +40,7 @@ class Vent:
 
 class SeaFloor:
     def __init__(self, vents):
-        self.vents = vents
-
+        self.vents = vents[:]
 
     def danger_zones(self, threshold=None, diagonals=None):
         if threshold is None:
@@ -73,16 +72,51 @@ def parse_vent(source):
     return Vent(Point(int(sx), int(sy)), Point(int(ex), int(ey)))
 
 
+def print_seafloor(sea_floor, poi = None):
+    if not debug():
+        return
+
+    xs = list(chain(*[(v.start.x, v.end.x) for v in sea_floor.vents]))
+    ys = list(chain(*[(v.start.y, v.end.y) for v in sea_floor.vents]))
+
+    dims = ( Point(min(xs), min(ys)), Point(max(xs), max(ys)) )
+
+    diff = dims[1] - dims[0]
+
+    grid = []
+    for j in range(dims[0].y, dims[1].y + 1):
+        grid.append( list("." * (diff.x + 1)) )
+
+    if poi:
+        for p in poi:
+            rel = p - dims[0]
+            grid[rel.y][rel.x] = f"{color.RED}{color.BOLD}X{color.END}"
+
+    topbot = "+" + "-" * (diff.x + 1) + "+"
+    print(topbot)
+    for row in grid:
+        print(f"|{''.join(row)}|")
+    print(topbot)
+
+
 def part_one(vents):
     sea_floor = SeaFloor(vents)
 
-    return len(sea_floor.danger_zones(threshold=2, diagonals=False))
+    dzs = sea_floor.danger_zones(threshold=2, diagonals=False)
+
+    print_seafloor(sea_floor, dzs)
+
+    return len(dzs)
 
 
 def part_two(vents):
     sea_floor = SeaFloor(vents)
 
-    return len(sea_floor.danger_zones(threshold=2, diagonals=True))
+    dzs = sea_floor.danger_zones(threshold=2, diagonals=True)
+
+    print_seafloor(sea_floor, dzs)
+
+    return len(dzs)
 
 
 def main():

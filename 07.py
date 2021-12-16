@@ -2,7 +2,7 @@
 
 from itertools import chain
 
-from common import read_input
+from common import read_input, debug
 
 
 def parse_crabs(source):
@@ -30,7 +30,7 @@ def find_cheapest(crabs, engine):
         if cheapest is None or cheapest[1] > cost:
             cheapest = (pos, cost)
 
-    print(f"cheapest position: {cheapest[0]} for {cheapest[1]} fuel")
+    debug(f"cheapest position: {cheapest[0]} for {cheapest[1]} fuel")
 
     return cheapest
 

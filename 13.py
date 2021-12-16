@@ -2,7 +2,7 @@
 
 import re
 
-from common import read_input, Point, clean
+from common import read_input, Point, clean, debug, color
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -86,9 +86,9 @@ class Sheet:
             for i in range(bounds[0].x, bounds[1].x + 1):
                 n = self.contents[Point(i, j)]
                 if n > 0:
-                    line += '#'
+                    line += f"{color.BOLD}{color.GREEN}#{color.END}"
                 else:
-                    line += ' '
+                    line += f"{color.FAINT}.{color.END}"
             line += "|"
             sheet.append(line)
         sheet.append(topbot)
@@ -100,7 +100,13 @@ def part_one(page):
     dots, instructions = page
     sheet = Sheet(dots)
 
+    debug("initial")
+    debug(sheet)
+
     sheet.fold(instructions[0])
+    
+    debug(f"after {instructions[0]}")
+    debug(sheet)
 
     return sheet.count_dots()
 
@@ -109,8 +115,13 @@ def part_two(page):
     dots, instructions = page
     sheet = Sheet(dots)
 
+    debug("initial")
+    debug(sheet)
+
     for instr in instructions:
         sheet.fold(instr)
+        debug(f"after {instr}")
+        debug(sheet)
 
     print(sheet)
     return '☝'
@@ -139,8 +150,6 @@ def parse_page():
 
 def main():
     page = parse_page()
-
-    #print(page)
 
     print(f"part 1: {part_one(page)}")
     print(f"part 2: {part_two(page)}")

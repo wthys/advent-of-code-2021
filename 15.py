@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from common import read_input, Point, neejbers, color, intlist, combine, clean
+from common import read_input, Point, neejbers, color, intlist, combine, clean, debug
 from graph import Edge, Graph
 
 from collections import namedtuple, defaultdict
@@ -31,7 +31,7 @@ class CaveGraph(Graph):
             if u == end:
                 break
 
-        print(f"\rdone!                     ")
+        print(" "*30, end="\r")
 
         path = []
         u = end
@@ -68,7 +68,7 @@ class CaveGraph(Graph):
             u = sorted(Q, key=lambda n: f[n])[0]
             
             if u == end:
-                print("done!"+ " "*20)
+                print(" "*30, end="\r")
                 return construct_path(u)
 
             print(f"h({u.x: 4d}, {u.y: 4d}) = {hfunc(u): 4d}   ", end = "\r")
@@ -110,16 +110,18 @@ def graph_from_grid(grid):
 
 
 def pretty_grid_path(grid, path):
-    return
+    if not debug():
+        return
 
     print("+" + "-" * len(grid[0]) + "+")
     for j, row in enumerate(grid):
         line = ""
         for i, value in enumerate(row):
             if Point(i, j) in path:
-                line += f"{color.BOLD + color.RED}{value}{color.END}"
+                line += f"{color.BOLD + color.GREEN}{value}{color.END}"
             else:
-                line += f"{value}"
+                line += f"{color.FAINT}{value}{color.END}"
+        print(f"|{line}|")
     print("+" + "-" * len(grid[0]) + "+")
 
         

@@ -5,7 +5,7 @@ import re
 from itertools import chain
 from collections import Counter
 
-from common import read_input
+from common import read_input, debug
 
 
 class School:
@@ -65,11 +65,11 @@ def fish_str(fishes):
 
 def simulate(fishes, days):
     school = School(fishes)
-    #print(f"initial state: {','.join(fish_str(school.elements()))}")
+    debug(f"initial state: {','.join(fish_str(school.elements()))}")
 
     for i in range(days):
         school.age()
-        #print(f"day {i+1: 3d}: {school}")
+        debug(f"day {i+1: 3d}: {school}")
 
     return school
 

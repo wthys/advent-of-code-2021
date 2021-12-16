@@ -3,7 +3,7 @@
 import operator
 from functools import reduce
 
-from common import read_input
+from common import read_input, debug, combine, clean, color
 
 
 class Transmission:
@@ -42,6 +42,12 @@ class Packet:
 
     def calculate(self):
         raise NotImplemented()
+
+    def sum_version(self):
+        raise NotImplemented()
+
+    def packet_type(self):
+        return "PLUS MINUS MIN MAX LITERAL GREATER-THAN LESS-THAN EQUALS".split(' ')[self.type]
 
 
 class LiteralPacket(Packet):
@@ -158,8 +164,29 @@ def parse_transmission(source):
     return Transmission(source.strip())
 
 
+def print_packet(packet):
+    if not debug():
+        return
+
+    spacer = "  "
+    subber = f"{color.GREEN}\_{color.END}"
+
+    def walk(packet, indent):
+        if packet.is_literal():
+            print(f"{spacer * indent}{subber} [{packet.packet_type()} v{packet.version}] {packet.literal}")
+        else:
+            print(f"{spacer * indent}{subber} [{packet.packet_type()} v{packet.version}] {packet.calculate()}")
+            for p in packet.packets:
+                walk(p, indent + 1)
+
+    walk(packet, 0)
+
+
+
 def part_one(transmission):
     packet, remainder = decode_packet(transmission.bits)
+
+    print_packet(packet)
 
     return packet.sum_version()
 
@@ -167,11 +194,13 @@ def part_one(transmission):
 def part_two(transmission):
     packet, remainder = decode_packet(transmission.bits)
 
+    print_packet(packet)
+
     return packet.calculate()
 
 
 def main():
-    transmissions = read_input(parse_transmission)
+    transmissions = read_input(combine(Transmission, clean))
 
     extra_info = len(transmissions) > 1
 

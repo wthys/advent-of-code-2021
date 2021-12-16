@@ -71,7 +71,7 @@ def part_two(edges):
 def parse_edge(line):
     start, end = line.split('-')
     return Edge(start, end)
-    
+
 
 def main():
     edges = read_input(combine(parse_edge, clean))

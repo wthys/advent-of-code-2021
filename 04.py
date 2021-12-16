@@ -2,7 +2,7 @@
 
 from itertools import chain, compress
 
-from common import read_input, clean
+from common import debug, read_input, clean
 
 
 class BingoBoard:
@@ -74,14 +74,24 @@ def parse_input():
     return drawn, boards
 
 
+def print_board(board, pre=None, post=None):
+    if not debug():
+        return
+
+    if pre:
+        print(pre)
+    print(board)
+    if post:
+        print(post)
+
+
 def part_one(drawn, boards):
     for n in range(len(drawn)):
         current_drawn = drawn[:n]
         for i, board in enumerate(boards):
             score = board.score(current_drawn)
             if score >= 0:
-                #print(f"drawn: {current_drawn}, board: {i+1}")
-                #print(board)
+                print_board(board, pre = f"drawn: {current_drawn}, board: {i+1}")
                 return score
 
 
@@ -99,10 +109,10 @@ def part_two(drawn, boards):
 def main():
     drawn, boards = parse_input()
 
-    #print(f"drawn: {drawn}")
-    #print("boards:")
-    #for board in boards:
-    #    print(board)
+    debug(f"drawn: {drawn}")
+    debug("boards:")
+    for board in boards:
+        print_board(board)
 
     print(f"part 1: {part_one(drawn, boards)}")
     print(f"part 2: {part_two(drawn, boards)}")

@@ -8,10 +8,12 @@ from dataclasses import dataclass
 from typing import List
 
 
-def debug():
+def debug(value=None):
     dbg = os.environ.get('DEBUG', "false")
     if dbg.lower() in ('false', 'no', 'f', 'n', '0', 'd', 'disabled'):
         return False
+    if value:
+        print(value)
     return True
 
 
@@ -22,10 +24,29 @@ class Point:
 
     def subtract(self, other):
         match other:
-            case Point(_, _):
-                return Point(self.x - other.x, self.y - other.y)
+            case Point(x, y):
+                return Point(self.x - x, self.y - y)
+            case (x, y):
+                return Point(self.x - x, self.y - y)
             case _:
-                raise ValueError(f"other is not a Point (got {type(other)})")
+                raise ValueError(f"other is not a Point or tuple (got {type(other)})")
+
+    def __sub__(self, other):
+        return self.subtract(other)
+
+    def add(self, other):
+        match other:
+            case Point(x, y):
+                return Point(self.x + x, self.y + y)
+            case (x, y):
+                return Point(self.x + x, self.y + y)
+            case _:
+                raise ValueError(f"other is not a Point or tuple (got {type(other)})")
+
+    def __add__(self, other):
+        return self.add(other)
+
+
 
 
 class color:

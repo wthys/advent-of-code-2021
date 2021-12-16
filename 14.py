@@ -2,7 +2,7 @@
 
 import re
 
-from common import read_input, clean
+from common import read_input, clean, debug
 
 from collections import Counter
 from itertools import pairwise
@@ -95,7 +95,6 @@ class Reactor:
         elems = Counter(template)
 
         for i in range(n):
-            #print(f"{i+1: 2d}: {pairs}")
             new_pairs = Counter()
             for (a, b), count in pairs.items():
                 newel = self.__react(a, b)
@@ -122,7 +121,7 @@ def part_one(engine):
     reactor = Reactor(reactions)
 
     ctr = reactor.react4(template, 10)
-    #print(ctr)
+    debug(ctr)
 
     most = ctr.most_common(1)[0]
     least = ctr.most_common()[-1]
@@ -136,6 +135,7 @@ def part_two(engine):
     reactor = Reactor(reactions)
 
     ctr = reactor.react4(template, 40)
+    debug(ctr)
 
     most = ctr.most_common(1)[0]
     least = ctr.most_common()[-1]
