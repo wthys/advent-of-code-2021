@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 
 import fileinput
+import os
 
 from collections import Counter
 from dataclasses import dataclass
 from typing import List
+
+
+def debug():
+    dbg = os.environ.get('DEBUG', "false")
+    if dbg.lower() in ('false', 'no', 'f', 'n', '0', 'd', 'disabled'):
+        return False
+    return True
 
 
 @dataclass(frozen=True)
@@ -30,6 +38,7 @@ class color:
     RED = '\033[91m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+    FAINT = '\033[2m'
     END = '\033[0m'
 
 
