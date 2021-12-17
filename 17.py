@@ -20,6 +20,19 @@ class Probe:
         vel = self.velocity - (sign(self.velocity.x, int), 1)
         return Probe(pos, vel)
 
+    def path(self, stop=None):
+        if stop is None:
+            stop = lambda _ : False
+
+        yield self.position
+
+        probe = self.move()
+        while not stop(probe):
+            yield probe.position
+            probe = probe.move()
+
+        yield probe.position
+
     def __repr__(self):
         return f"Probe({repr(self.position)},{repr(self.velocity)})"
 
@@ -53,26 +66,12 @@ class Result:
     max_height: int
 
 
-def shoot_probe(probe, target_area):
-    path = [probe.position]
-
-    while probe.position not in target_area:
-        nprobe = probe.move()
-
-        path.append(nprobe.position)
-        probe = nprobe
-
-        if nprobe.position.y < min(target_area.y):
-            break
-
-        if nprobe.position.x > max(target_area.x):
-            break
-
-    return path
-
-
 def simulate_probe(probe, target_area):
-    path = shoot_probe(probe, target_area)
+    def stop(p):
+        pos = p.position
+        return pos in target_area or pos.x > max(target_area.x) or pos.y < min(target_area.y)
+
+    path = list(probe.path(stop))
     success = path[-1] in target_area
     max_height = max( p.y for p in path )
 
