@@ -32,14 +32,6 @@ class Area:
     def __iter__(self):
         return map(lambda pos: Point(*pos), product(self.x, self.y))
 
-    def center(self):
-        if len(self.x) == 0 or len(self.y) == 0:
-            return None
-
-        xa = sum(self.x) / len(self.x)
-        ya = sum(self.y) / len(self.y)
-        return Point(xa, ya)
-
 
 def ensure_pos(pos):
     match pos:
@@ -140,6 +132,7 @@ def prepare_grid(start, target_area):
 
     return grid
 
+
 @dataclass(frozen=True)
 class Result:
     success: bool
@@ -148,34 +141,29 @@ class Result:
     max_height: int
 
 
-def simulate_probe(position, velocity, target_area):
-    path = [position]
+def shoot_probe(probe, target_area):
+    path = [probe.position]
 
-    cot = target_area.center()
-
-    dist_to_target = (cot - position).mag()    
-
-    max_height = position.y
-
-    probe = Probe(position, velocity)
     while probe.position not in target_area:
-        probe = probe.move()
-        path.append(probe.position)
-        max_height = max(max_height, probe.position.y)
+        nprobe = probe.move()
 
-        # check we are still moving towards the target
-        newdist = (cot - probe.position).mag()
-        if probe.velocity.y < 0 and newdist > dist_to_target:
+        path.append(nprobe.position)
+        probe = nprobe
+
+        if nprobe.position.y < min(target_area.y):
             break
 
-        dist_to_target = newdist
-
-        if probe.position.x > max(target_area.x):
+        if nprobe.position.x > max(target_area.x):
             break
 
+    return path
 
-    success = probe.position in target_area
-    probe = Probe(position, velocity)
+
+def simulate_probe(probe, target_area):
+    path = shoot_probe(probe, target_area)
+    success = path[-1] in target_area
+    max_height = max( p.y for p in path )
+
     return Result(success, probe, path, max_height)
 
 
@@ -183,12 +171,13 @@ def print_result(target_area, result):
     if not debug():
         return
 
+    print(f"result: {result.probe}, {result.max_height}")
+    
     grid = prepare_grid((0,0), target_area)
 
     for p in result.path[1:]:
         grid.set(p, f"{color.BLUE}#{color.END}")
 
-    print(f"result: {result.probe}, {result.max_height}")
     print_grid(grid)
 
 
@@ -208,7 +197,8 @@ def part_one(target_area):
     start = Point(0, 0)
 
     for vx, vy in product(xs, ys):
-        result = simulate_probe(start, Point(vx, vy), target_area)
+        probe = Probe(start, Point(vx, vy))
+        result = simulate_probe(probe, target_area)
         #print_result(target_area, result)
         if result.success:
             if result.max_height > best.max_height:
@@ -220,13 +210,32 @@ def part_one(target_area):
 
     print_result(target_area, best)
 
-    calculated = max(ys) * (max(ys) + 1) // 2
-
-    return best.max_height, calculated
+    return best.max_height
 
 
 def part_two(target_area):
-    return 'n/a'
+
+    ys = range(min(target_area.y), max(map(abs, target_area.y)))
+
+    def cond(n):
+        return (n * (n + 1) // 2) >= min(target_area.x)
+
+    minx = min(filter(cond, range(min(target_area.x))))
+    xs = range(minx, max(target_area.x) + 1)
+
+    results = []
+    start = Point(0, 0)
+
+    for vx, vy in product(xs, ys):
+        probe = Probe(start, Point(vx, vy))
+        result = simulate_probe(probe, target_area)
+
+        if result.success:
+            results.append(result)
+
+    velocities = set(map(lambda r: r.probe.velocity, results))
+
+    return len(velocities)
 
 
 def main():
