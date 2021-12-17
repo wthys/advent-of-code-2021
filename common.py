@@ -47,6 +47,10 @@ class Point:
         return self.add(other)
 
 
+    def mag(self):
+        return abs(self.x) + abs(self.y)
+
+
 
 
 class color:
@@ -88,10 +92,13 @@ def read_input(transform = None):
         return [ transform(line) for line in content ]
 
 
-def sign(value):
+def sign(value, func=None):
     if value == 0:
-        return 1
-    return value/abs(value)
+        return 0
+    if func:
+        return func(value/abs(value))
+    else:
+        return value/abs(value)
 
 
 def neejbers(x, y, /, diagonal = None):
@@ -109,16 +116,16 @@ def interpolate_points(start, end):
     diff = end.subtract(start)
 
     if diff.x == 0:
-        dy = int(sign(diff.y))
+        dy = sign(diff.y, int)
         return [ Point(start.x, y) for y in range(start.y, end.y + dy, dy) ]
 
     if diff.y == 0:
-        dx = int(sign(diff.x))
+        dx = sign(diff.x, int)
         return [ Point(x, start.y) for x in range(start.x, end.x + dx, dx) ]
 
     if abs(diff.x) == abs(diff.y):
-        dx = int(sign(diff.x))
-        dy = int(sign(diff.y))
+        dx = sign(diff.x, int)
+        dy = sign(diff.y, int)
 
         return [ Point(x, y) for x, y in zip(range(start.x, end.x + dx, dx), range(start.y, end.y + dy, dy)) ]
 
