@@ -46,9 +46,14 @@ class Point:
     def __add__(self, other):
         return self.add(other)
 
-
     def mag(self):
         return abs(self.x) + abs(self.y)
+
+    def __repr__(self):
+        return f"Point({self.x},{self.y})"
+
+    def __str__(self):
+        return f"({self.x},{self.y})"
 
 
 

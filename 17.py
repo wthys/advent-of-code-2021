@@ -20,6 +20,9 @@ class Probe:
         vel = self.velocity - (sign(self.velocity.x, int), 1)
         return Probe(pos, vel)
 
+    def __repr__(self):
+        return f"Probe({repr(self.position)},{repr(self.velocity)})"
+
 
 @dataclass(frozen=True)
 class Area:
@@ -33,87 +36,6 @@ class Area:
         return map(lambda pos: Point(*pos), product(self.x, self.y))
 
 
-def ensure_pos(pos):
-    match pos:
-        case Point(_, _):
-            return pos
-        case (x, y):
-            return Point(x, y)
-        case [x, y]:
-            return Point(x, y)
-        case _:
-            raise ValueError(f"Could not convert {pos} to Point")
-
-
-class GridBounds:
-    def __init__(self):
-        self._tl = None
-        self._br = None
-
-    def area(self):
-        if self._tl:
-            return Area(range(self._tl.x, self._br.x + 1), range(self._tl.y, self._br.y + 1))
-        return Area(range(0), range(0))
-
-    def add(self, position):
-        pos = ensure_pos(position)
-
-        tl = self._tl
-        br = self._br
-        if self._tl is None:
-            self._tl = pos
-            self._br = pos
-        else:
-            self._tl = Point(min(self._tl.x, pos.x), min(self._tl.y, pos.y))
-            self._br = Point(max(self._br.x, pos.x), max(self._br.y, pos.y))
-
-
-class Grid:
-    def __init__(self, grid = None, empty = None):
-        if empty is None:
-            empty = lambda:None
-
-        self._grid = defaultdict(empty)
-
-        self._bounds = GridBounds()
-
-        if grid:
-            self._bounds = (Point(0,0), Point(len(grid[0]), len(grid)))
-            for j, row in enumerate(grid):
-                for i, value in enumerate(row):
-                    self._grid[Point(i,j)] = value
-                    self._bounds.add(Point(i,j))
-
-
-    def area(self):
-        return self._bounds.area()
-
-    def set(self, position, value):
-        pos = ensure_pos(position)
-        self._grid[pos] = value
-        self._bounds.add(pos)
-        return self
-
-    def get(self, position):
-        pos = ensure_pos(position)
-        return self._grid[pos]
-
-
-def print_grid(grid):
-
-    area = grid.area()
-
-    topbot = "+" + "-" * len(area.x) + "+"
-
-    print(topbot)
-    for y in reversed(area.y):
-        row = ""
-        for x in area.x:
-            row += str(grid.get((x, y)))
-        print(f"|{row}|")
-    print(topbot)
-
-
 def parse_target(line):
     m = re.match(r"target area: x=(-?[0-9]+)\.\.(-?[0-9]+), y=(-?[0-9]+)\.\.(-?[0-9]+)", line)
     if not m:
@@ -121,16 +43,6 @@ def parse_target(line):
 
     xl, xh, yl, yh = list(map(int, m.group(1,2,3,4)))
     return Area(range(xl, xh + 1), range(yl, yh + 1))
-
-
-def prepare_grid(start, target_area):
-    grid = Grid(empty=lambda:'.')
-
-    grid.set(start, f'{color.RED}S{color.END}')
-    for pos in target_area:
-        grid.set(pos, f'{color.GREEN}T{color.END}')
-
-    return grid
 
 
 @dataclass(frozen=True)
@@ -167,18 +79,8 @@ def simulate_probe(probe, target_area):
     return Result(success, probe, path, max_height)
 
 
-def print_result(target_area, result):
-    if not debug():
-        return
-
-    print(f"result: {result.probe}, {result.max_height}")
-    
-    grid = prepare_grid((0,0), target_area)
-
-    for p in result.path[1:]:
-        grid.set(p, f"{color.BLUE}#{color.END}")
-
-    print_grid(grid)
+def print_result(result):
+    debug(f"result: {result.probe}, {result.max_height}")
 
 
 def part_one(target_area):
@@ -199,7 +101,7 @@ def part_one(target_area):
     for vx, vy in product(xs, ys):
         probe = Probe(start, Point(vx, vy))
         result = simulate_probe(probe, target_area)
-        #print_result(target_area, result)
+        #print_result(result)
         if result.success:
             if result.max_height > best.max_height:
                 best = result
@@ -208,7 +110,7 @@ def part_one(target_area):
     if not best.success:
         return "Could not find any solutions T_T"
 
-    print_result(target_area, best)
+    print_result(best)
 
     return best.max_height
 
