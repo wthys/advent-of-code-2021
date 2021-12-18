@@ -7,6 +7,7 @@ import pyparsing as pp
 
 from collections import namedtuple, defaultdict
 from copy import deepcopy
+from itertools import permutations
 
 
 def as_int(t):
@@ -243,7 +244,22 @@ def part_one(numbers):
     return sfn_mag(total)
 
 def part_two(numbers):
-    return 'n/a'
+
+    largest = (0, [])
+
+    for a, b in permutations(numbers, 2):
+        total = sfn_add(a, b)
+        mag = sfn_mag(total)
+        if mag > largest[0]:
+            debug(" ")
+            debug(f"{color.RED}{color.BOLD}NEW LARGEST @ {mag}{color.END}")
+            debug(f"  {a}")
+            debug(f"+ {b}")
+            debug(f"= {total}")
+            largest = (mag, total)
+
+
+    return largest[0]
 
 
 if __name__ == "__main__":
