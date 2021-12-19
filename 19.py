@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-from common import read_input, clean, color, debug, sign
+from common import read_input, clean, color, debug, sign, ident, combine
 
 import re
 import math
 
 from dataclasses import dataclass
 from numbers import Real, Integral
-from sortedcontainers import SortedList
 from collections import Counter
 from itertools import combinations, permutations, product
 
@@ -36,7 +35,7 @@ class Point3:
     z: int
 
     def __sub__(self, other):
-        return self + (other * -1)
+        return self + (-other)
 
     def __add__(self, other):
         match other:
@@ -49,32 +48,8 @@ class Point3:
             case _:
                 raise ValueError(f"Cannot add {type(other)} to {self.__class__.__name__}")
 
-    def __mul__(self, other):
-        ensure_number(other, f"Cannot multiply {self.__class__.__name__} with {type(other)}")
-        return Point3(self.x * other, self.y * other, self.z * other)
-
-
-    def __mod__(self, other):
-        match other:
-            case Point3(x, y, z) | (x, y, z) | [x, y, z]:
-                return Point3(self.x % x, self.y % y, self.z % z)
-            case _:
-                n = ensure_number(other, "Cannot modulo {self.__class__.__name__} with {type(other)}")
-                return Point3(self.x % n, self.y % n, self.z % n)
-
-
-    def rotate90(self, x=None, y=None, z=None):
-        x = 0 if x is None else (ensure_int(x) % 4)
-        y = 0 if y is None else (ensure_int(y) % 4)
-        z = 0 if z is None else (ensure_int(z) % 4)
-
-        if x:
-            return Point3(self.x, -self.z, self.y).rotate90(x - 1, y, z)
-        if y:
-            return Point3(self.z, self.y, -self.x).rotate90(x, y - 1, z)
-        if z:
-            return Point3(-self.y, self.x, self.z).rotate90(x, y, z - 1)
-        return self
+    def __neg__(self):
+        return Point3(-self.x, -self.y, -self.z)
 
     def mag(self):
         return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
@@ -85,28 +60,65 @@ class Point3:
     def __repr__(self):
         return f"Point3{self}"
 
+
+def rotx(p):
+    return Point3( p.x, -p.z,  p.y)
+
+def roty(p):
+    return Point3( p.z,  p.y, -p.x)
+
+def rotz(p):
+    return Point3(-p.y,  p.x,  p.z)
+
+def rotations():
+    yield ident
+    yield rotx
+    yield combine(rotx, rotx)
+    yield combine(rotx, rotx, rotx)
+
+    yield                           rotz
+    yield combine(roty,             rotz)
+    yield combine(roty, roty,       rotz)
+    yield combine(roty, roty, roty, rotz)
+
+    yield combine(                  rotz, rotz)
+    yield combine(rotx,             rotz, rotz)
+    yield combine(rotx, rotx,       rotz, rotz)
+    yield combine(rotx, rotx, rotx, rotz, rotz)
+
+    yield combine(                  rotz, rotz, rotz)
+    yield combine(roty,             rotz, rotz, rotz)
+    yield combine(roty, roty,       rotz, rotz, rotz)
+    yield combine(roty, roty, roty, rotz, rotz, rotz)
+
+    yield                           roty
+    yield combine(rotz,             roty)
+    yield combine(rotz, rotz,       roty)
+    yield combine(rotz, rotz, rotz, roty)
+
+    yield combine(                  roty, roty, roty)
+    yield combine(rotz,             roty, roty, roty)
+    yield combine(rotz, rotz,       roty, roty, roty)
+    yield combine(rotz, rotz, rotz, roty, roty, roty)
+
+
 @dataclass(frozen=True)
 class Scanner:
     id: int
     beacons: list[Point3]
-    rotation: Point3 = Point3(0,0,0)
+    coord: Point3 = Point3(0,0,0)
 
-    def rotate90(self, x = None, y = None, z = None):
-        x = 0 if x is None else (ensure_int(x) % 4)
-        y = 0 if y is None else (ensure_int(y) % 4)
-        z = 0 if z is None else (ensure_int(z) % 4)
+    def with_coord(self, coord):
+        return Scanner(self.id, self.beacons[:], coord)
 
-        bcns = map(lambda b: b.rotate90(x, y, z), self.beacons)
-        rot = (self.rotation + (x, y, z)) % 4
-        return Scanner(self.id, list(bcns), rot)
+    def __iter__(self):
+        yield from map(lambda p: self.coord + p, self.beacons)
 
-    def translate(self, vector):
-        bcns = map(lambda b: b + vector, self.beacons)
-        return Scanner(self.id, list(bcns), self.rotation)
+    def rotate(self, rot):
+        return Scanner(self.id, list(map(rot, self.beacons)), self.coord)
 
     def __str__(self):
-        return f"Scanner(id={self.id}, rot={self.rotation}, bcns={len(self.beacons)})"
-
+        return f"Scanner(id={self.id}, bcns={len(self.beacons)}, coord={self.coord})"
 
 """
 How to find overlaps?
@@ -147,80 +159,64 @@ def parse_input(content):
     return scanners
 
 
-@dataclass(frozen=True)
-class Overlap:
-    beacons: list[Point3]
-    structure: Counter[Point3]
-    rotation: Point3 = Point3(0,0,0)
+class Signature:
+    def __init__(self, points):
+        if len(points) < 2:
+            raise ValueError(f"Signature needs at least two points")
+
+        ordered = sorted(points, key=lambda p: (p.x, p.y, p.z))
+        self._nexus = ordered[0]
+        self._points = ordered
+        self._signature = list(map(lambda p: p - self._nexus, ordered[1:]))
 
     def __eq__(self, other):
-        return self.structure == other.structure
+        if not isinstance(other, Signature):
+            return False
+
+        if len(self._signature) != len(other._signature):
+            return False
+
+        for l, r in zip(self._signature, other._signature):
+            if l != r:
+                return False
+
+        return True
+
+    def rotate(self, rot):
+        return Signature(list(map(rot, self._points)))
+
+    def nexus(self):
+        return self._nexus
 
 
-def find_plane(p1, p2, p3):
-
-    d1 = p2 - p1
-    d2 = p3 - p1
-
-    a = d1.y * d2.z - d2.x * d1.z
-    b = d2.x * d1.z - d1.x * d2.z
-    c = d1.x * d2.y - d2.x * d1.y
-    d = (-a * p1.x - b * p1.y - c * p1.z)
-
-    def in_plane(p):
-        return (a * p.x + b * p.y + c * p.z + d) == 0
-
-    return in_plane
-
-def create_subsets(scanner):
-    for beacons in combinations(scanner.beacons, 12):
-        in_plane = find_plane(*(beacons[:3]))
-        if sum(1 for _ in filter(in_plane, beacons)) == len(beacons):
-            continue
-        
-        structure = Counter( a - b for a, b in permutations(beacons, 2) )
-        yield Overlap(beacons, structure, scanner.rotation)
-
-
-def find_overlaps(source, target):
-
+def find_overlaps(known, candidate):
     n = 0
-
-    for tgt_overlap in create_subsets(target):
-        for x, y, z in product(range(-1, 3), repeat=3):
-            for src_overlap in create_subsets(source.rotate90(x, y, z)):
+    for truth in map(Signature, combinations(known.beacons, 12)):
+        for prospect in map(Signature, combinations(candidate.beacons, 12)):
+            for rot in rotations():
                 n += 1
-
                 if debug():
-                    print(f"  checking #{n: 5d}     ", end="\r")
-                if tgt_overlap == src_overlap:
-                    yield (src_overlap, tgt_overlap)
-    
-
-    debug(f"  done checking!            ")
+                    print(f"{color.FAINT}checking #{n:<10d}{color.END}", end = "\r")
+                if truth == prospect.rotate(rot):
+                    debug(f"{color.RED}FOUND MATCH{color.END}  {known} -> {candidate}")
+                    yield (truth, prospect.rotate(rot), rot)
 
 
 def part_one(scanners):
 
     debug(f"scanners: {', '.join(map(str, scanners))}")
 
-    root = list(filter(lambda s: s.id == 0, scanners))[0]
+    scanmap = { s.id: s for s in scanners }
 
-    first = None
-    fixed = [root]
-    links = []
-    newfixed = []
-    for target in fixed:
-        for candidate in filter(lambda s: s.id not in set( x.id for x in fixed ), scanners):
-            for overlap in find_overlaps(candidate, target):
-                rot = overlap[0].rotation
-                cand = candidate.rotate90(rot.x, rot.y, rot.z)
-                newfixed.append(cand)
-                links.append((cand, overlap, target))
+    root = scanmap[0]
 
-    if debug(f"found {len(links)} overlaps:"):
-        for node, overlap, root in links:
-            debug(f"{node} -> {root}")
+    for overlap in find_overlaps(root, scanmap[1]):
+        nexusA = overlap[0].nexus()
+        nexusB = overlap[1].nexus()
+
+        matching = scanmap[1].rotate(overlap[2]).with_coord(nexusA - nexusB)
+        debug(f"{root} -> {matching}")
+
 
 
 
