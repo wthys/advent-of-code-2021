@@ -1,31 +1,13 @@
 #!/usr/bin/env python3
 
-from common import read_input, clean, color, debug, sign, ident, combine
+from common import read_input, clean, color, debug, ident, combine
 
 import re
 import math
 
 from dataclasses import dataclass
-from numbers import Real, Integral
-from collections import Counter
-from itertools import combinations, permutations, product
-
-
-def ensure_number(n, msg=None):
-    if isinstance(n, Real):
-        return n
-    if msg:
-        raise ValueError(msg)
-    raise ValueError(f"{n} is not a number")
-
-def ensure_int(n, msg=None):
-    if isinstance(n, Integral):
-        return n
-    if int(n) == n:
-        return int(n)
-    if msg:
-        raise ValueError(msg)
-    raise ValueError(f"{n} is not an integer")
+from collections import defaultdict
+from itertools import chain
 
 
 @dataclass(frozen=True)
@@ -139,14 +121,12 @@ def parse_input(content):
         if m:
             cur_id = int(m.group(1))
             cur_bcns = []
-            debug(f"-- found scanner {cur_id}")
             continue
 
         m = re.match(r"(-?[0-9]+),(-?[0-9]+),(-?[0-9]+)", line)
         if m:
             x, y, z = m.group(1,2,3)
             cur_bcns.append(Point3(int(x), int(y), int(z)))
-            debug(f"  -- found beacon {cur_bcns[-1]}")
             continue
 
         scanners.append(Scanner(cur_id, cur_bcns))
@@ -161,12 +141,11 @@ def parse_input(content):
 
 class Signature:
     def __init__(self, points):
-        if len(points) < 2:
+        ordered = sorted(points, key=lambda p: (p.x, p.y, p.z))
+        if len(ordered) < 2:
             raise ValueError(f"Signature needs at least two points")
 
-        ordered = sorted(points, key=lambda p: (p.x, p.y, p.z))
         self._nexus = ordered[0]
-        self._points = ordered
         self._signature = list(map(lambda p: p - self._nexus, ordered[1:]))
 
     def __eq__(self, other):
@@ -182,51 +161,53 @@ class Signature:
 
         return True
 
-    def rotate(self, rot):
-        return Signature(list(map(rot, self._points)))
-
     def nexus(self):
         return self._nexus
 
 
-def find_overlaps(known, candidate):
+def find_match(known, candidate):
     n = 0
-    for truth in map(Signature, combinations(known.beacons, 12)):
-        for prospect in map(Signature, combinations(candidate.beacons, 12)):
-            for rot in rotations():
+    debug(f"{color.BOLD}checking {known} -> {candidate}{color.END}")
+    known_beacons = set(known.beacons)
+    for k in known.beacons:
+        for cand in map(lambda rot: candidate.rotate(rot), rotations()):
+            for c in cand.beacons:
                 n += 1
                 if debug():
-                    print(f"{color.FAINT}checking #{n:<10d}{color.END}", end = "\r")
-                if truth == prospect.rotate(rot):
-                    debug(f"{color.RED}FOUND MATCH{color.END}  {known} -> {candidate}")
-                    yield (truth, prospect.rotate(rot), rot)
+                    print(f"  {color.FAINT}checking {str(k):>19} -> {str(c):<19} /{n:<6d}{color.END}", end = '\r')
+                trans = c - k
+                suspects = set(map(lambda b: b - trans, cand.beacons))
+
+                common = known_beacons & suspects
+                if len(common) >= 12:
+                    home = Signature(common)
+                    dest = Signature(map(lambda b: b + trans, common))
+
+                    found = cand.with_coord(home.nexus() - dest.nexus())
+                    debug(f"  {color.RED}MATCH FOUND{color.END} - {known} -- {found}")
+                    return found
+
+    return None
 
 
 def part_one(scanners):
 
-    debug(f"scanners: {', '.join(map(str, scanners))}")
-
     scanmap = { s.id: s for s in scanners }
 
-    root = scanmap[0]
+    known = scanmap[0]
+    del scanmap[0]
 
-    for overlap in find_overlaps(root, scanmap[1]):
-        nexusA = overlap[0].nexus()
-        nexusB = overlap[1].nexus()
+    while len(scanmap) > 0:
+        for scanid, scanner in list(scanmap.items()):
+            match = find_match(known, scanner)
+            if match:
+                known = Scanner(0, set(chain(known, match)))
+                del scanmap[scanid]
+                break
 
-        matching = scanmap[1].rotate(overlap[2]).with_coord(nexusA - nexusB)
-        debug(f"{root} -> {matching}")
+    debug(f"known world contained by {known}")
 
-
-
-
-
-
-
-
-    
-
-    return 'n/a'
+    return len(list(known))
 
 
 def part_two(scanners):
