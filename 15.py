@@ -45,7 +45,7 @@ class CaveGraph(Graph):
     def shortest_path_astar(self, start, end):
 
         def hfunc(node):
-            return abs(node.x - end.x) + abs(node.y - end.y)
+            return (node - end).mag()
 
         Q = set([start])
         prev = dict()

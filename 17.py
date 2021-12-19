@@ -2,7 +2,7 @@
 
 import re
 
-from common import read_input, clean, combine, Point, sign, color, debug
+from common import read_input, clean, combine, Point, sign, color, debug, Area
 
 from dataclasses import dataclass
 from collections import defaultdict
@@ -35,18 +35,6 @@ class Probe:
 
     def __repr__(self):
         return f"Probe({repr(self.position)},{repr(self.velocity)})"
-
-
-@dataclass(frozen=True)
-class Area:
-    x: range
-    y: range
-
-    def __contains__(self, pos):
-        return pos.x in self.x and pos.y in self.y
-
-    def __iter__(self):
-        return map(lambda pos: Point(*pos), product(self.x, self.y))
 
 
 def parse_target(line):

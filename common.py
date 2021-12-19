@@ -56,6 +56,16 @@ class Point:
         return f"({self.x},{self.y})"
 
 
+@dataclass(frozen=True)
+class Area:
+    x: range
+    y: range
+
+    def __contains__(self, pos):
+        return pos.x in self.x and pos.y in self.y
+
+    def __iter__(self):
+        return map(lambda pos: Point(*pos), product(self.x, self.y))
 
 
 class color:

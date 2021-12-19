@@ -2,7 +2,7 @@
 
 import re
 
-from common import read_input, Point, clean, debug, color
+from common import read_input, Point, clean, debug, color, Area
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -25,7 +25,9 @@ class Sheet:
         xs = list(sorted( dot.x for dot in self.contents.keys() ))
         ys = list(sorted( dot.y for dot in self.contents.keys() ))
 
-        return (Point(xs[0], ys[0]), Point(xs[-1], ys[-1]))
+        area = Area(range(min(xs), max(xs)+1), range(min(ys), max(ys)+1))
+
+        return area
 
     def count_dots(self):
         return len([ n for n in self.contents.values() if n > 0 ])
@@ -33,10 +35,10 @@ class Sheet:
     def foldY(self, y):
         bounds = self.bounds()
 
-        bottom_size = bounds[1].y - y
+        bottom_size = max(bounds.y) - y
 
         for j in range(bottom_size + 1):
-            for i in range(bounds[0].x, bounds[1].x + 1):
+            for i in bounds.x:
                 orig = Point(i, y + j)
                 dest = Point(i, y - j)
 
@@ -51,10 +53,10 @@ class Sheet:
     def foldX(self, x):
         bounds = self.bounds()
 
-        right_size = bounds[1].x - x
+        right_size = max(bounds.x) - x
 
         for i in range(right_size + 1):
-            for j in range(bounds[0].y, bounds[1].y + 1):
+            for j in bounds.y:
                 orig = Point(x + i, j)
                 dest = Point(x - i, j)
 
@@ -78,12 +80,12 @@ class Sheet:
     def __str__(self):
         bounds = self.bounds()
 
-        topbot = "+" + "-" * abs(bounds[1].x - bounds[0].x + 1) + "+"
+        topbot = "+" + "-" * len(bounds.x) + "+"
 
         sheet = [topbot]
-        for j in range(bounds[0].y, bounds[1].y + 1):
+        for j in bounds.y:
             line = "|"
-            for i in range(bounds[0].x, bounds[1].x + 1):
+            for i in bounds.x:
                 n = self.contents[Point(i, j)]
                 if n > 0:
                     line += f"{color.BOLD}{color.GREEN}#{color.END}"
