@@ -7,7 +7,7 @@ import math
 
 from dataclasses import dataclass
 from collections import defaultdict
-from itertools import chain
+from itertools import chain, combinations, product
 
 
 @dataclass(frozen=True)
@@ -34,7 +34,7 @@ class Point3:
         return Point3(-self.x, -self.y, -self.z)
 
     def mag(self):
-        return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
+        return abs(self.x) + abs(self.y) + abs(self.z)
 
     def __str__(self):
         return f"({self.x},{self.y},{self.z})"
@@ -167,25 +167,22 @@ class Signature:
 
 def find_match(known, candidate):
     n = 0
-    debug(f"{color.BOLD}checking {known} -> {candidate}{color.END}")
     known_beacons = set(known.beacons)
-    for k in known.beacons:
-        for cand in map(lambda rot: candidate.rotate(rot), rotations()):
-            for c in cand.beacons:
-                n += 1
-                if debug():
-                    print(f"  {color.FAINT}checking {str(k):>19} -> {str(c):<19} /{n:<6d}{color.END}", end = '\r')
-                trans = c - k
-                suspects = set(map(lambda b: b - trans, cand.beacons))
+    for cand in map(lambda rot: candidate.rotate(rot), rotations()):
+        for trans in set( c - k for k, c in product(known.beacons, cand.beacons) ):
+            n += 1
+            if debug():
+                print(f"  {color.FAINT}checking ({trans.x:>+5d},{trans.y:>+5d},{trans.z:>+5d}) /{n:<6d}{color.END}", end = '\r')
+            suspects = set(map(lambda b: b - trans, cand.beacons))
 
-                common = known_beacons & suspects
-                if len(common) >= 12:
-                    home = Signature(common)
-                    dest = Signature(map(lambda b: b + trans, common))
+            common = known_beacons & suspects
+            if len(common) >= 12:
+                home = Signature(common)
+                dest = Signature(map(lambda b: b + trans, common))
 
-                    found = cand.with_coord(home.nexus() - dest.nexus())
-                    debug(f"  {color.RED}MATCH FOUND{color.END} - {known} -- {found}")
-                    return found
+                found = cand.with_coord(home.nexus() - dest.nexus())
+                debug(f"  {color.RED}MATCH FOUND{color.END} - {known} -- {found}")
+                return found
 
     return None
 
@@ -197,12 +194,15 @@ def part_one(scanners):
     known = scanmap[0]
     del scanmap[0]
 
+    found = [known]
+
     while len(scanmap) > 0:
         for scanid, scanner in list(scanmap.items()):
             match = find_match(known, scanner)
             if match:
                 known = Scanner(0, set(chain(known, match)))
                 del scanmap[scanid]
+                found.append(match)
                 break
 
     debug(f"known world contained by {known}")
@@ -219,8 +219,38 @@ def main():
 
     scanners = parse_input(content)
 
-    print(f"part 1: {part_one(scanners)}")
-    print(f"part 2: {part_two(scanners)}")
+    scanmap = { s.id: s for s in scanners }
+
+    known = scanmap[0]
+    del scanmap[0]
+
+    found = [known]
+
+    while len(scanmap) > 0:
+        debug(f"Scanners left: {len(scanmap):>3d} / {' '.join(map(str, scanmap))}")
+        for scanid, scanner in list(scanmap.items()):
+            match = find_match(known, scanner)
+            if match:
+                known = Scanner(0, set(chain(known, match)))
+                del scanmap[scanid]
+                found.append(match)
+                break
+
+    debug(f"known world contained by {known}")
+
+    print(f"part 1: {len(list(known))}")
+
+
+    largest_dist = 0
+
+    for a, b in combinations(found, 2):
+        dist = (a.coord - b.coord).mag()
+        if dist > largest_dist:
+            debug(f"  {color.GREEN}NEW RECORD{color.END} : {dist} between {a.id} and {b.id}")
+            largest_dist = dist
+
+
+    print(f"part 2: {largest_dist}")
 
 
 if __name__ == "__main__":
