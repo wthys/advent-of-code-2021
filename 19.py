@@ -6,8 +6,8 @@ import re
 import math
 
 from dataclasses import dataclass
-from collections import defaultdict
 from itertools import chain, combinations, product
+from time import time
 
 
 @dataclass(frozen=True)
@@ -53,31 +53,37 @@ def rotz(p):
     return Point3(-p.y,  p.x,  p.z)
 
 def rotations():
+    # rotate around +x/1
     yield ident
     yield rotx
     yield combine(rotx, rotx)
     yield combine(rotx, rotx, rotx)
 
+    # rotate around +y/2
     yield                           rotz
     yield combine(roty,             rotz)
     yield combine(roty, roty,       rotz)
     yield combine(roty, roty, roty, rotz)
 
+    # rotate around -x/6
     yield combine(                  rotz, rotz)
     yield combine(rotx,             rotz, rotz)
     yield combine(rotx, rotx,       rotz, rotz)
     yield combine(rotx, rotx, rotx, rotz, rotz)
 
+    # rotate around -y/5
     yield combine(                  rotz, rotz, rotz)
     yield combine(roty,             rotz, rotz, rotz)
     yield combine(roty, roty,       rotz, rotz, rotz)
     yield combine(roty, roty, roty, rotz, rotz, rotz)
 
+    # rotate around -z/4
     yield                           roty
     yield combine(rotz,             roty)
     yield combine(rotz, rotz,       roty)
     yield combine(rotz, rotz, rotz, roty)
 
+    # rotate around +z/3
     yield combine(                  roty, roty, roty)
     yield combine(rotz,             roty, roty, roty)
     yield combine(rotz, rotz,       roty, roty, roty)
@@ -101,13 +107,6 @@ class Scanner:
 
     def __str__(self):
         return f"Scanner(id={self.id}, bcns={len(self.beacons)}, coord={self.coord})"
-
-"""
-How to find overlaps?
-
-- point structure will be the same for the overlap
-    - match on pair vectors?
-"""
 
 
 def parse_input(content):
@@ -139,79 +138,59 @@ def parse_input(content):
     return scanners
 
 
-class Signature:
-    def __init__(self, points):
-        ordered = sorted(points, key=lambda p: (p.x, p.y, p.z))
-        if len(ordered) < 2:
-            raise ValueError(f"Signature needs at least two points")
-
-        self._nexus = ordered[0]
-        self._signature = list(map(lambda p: p - self._nexus, ordered[1:]))
-
-    def __eq__(self, other):
-        if not isinstance(other, Signature):
-            return False
-
-        if len(self._signature) != len(other._signature):
-            return False
-
-        for l, r in zip(self._signature, other._signature):
-            if l != r:
-                return False
-
-        return True
-
-    def nexus(self):
-        return self._nexus
-
-
 def find_match(known, candidate):
+    """
+    Find a match by going over all possible translations between the known
+    beacon coordinates and the suspected coordinates (after rotation). If
+    twelve or more suspected coordinates map to known coordinates using a
+    transision, we assume that is the wanted transition and we can return the
+    rotated candidate with a filled in coordinate based on the known world.
+
+    Thanks Timmy for the tip on this part! ❤
+    """
     n = 0
     known_beacons = set(known.beacons)
+    current = f"{known.id:>2} → {candidate.id:<2}"
+
+    # make sure we go over all rotations
     for cand in map(lambda rot: candidate.rotate(rot), rotations()):
+
+        # try to map the unknown points to the known world so `c - trans = k`
         for trans in set( c - k for k, c in product(known.beacons, cand.beacons) ):
             n += 1
             if debug():
-                print(f"  {color.FAINT}checking ({trans.x:>+5d},{trans.y:>+5d},{trans.z:>+5d}) /{n:<6d}{color.END}", end = '\r')
-            suspects = set(map(lambda b: b - trans, cand.beacons))
+                s_trans = f"({trans.x:>+5d},{trans.y:>+5d},{trans.z:>+5d})"
+                print(f"  {color.FAINT}checking {current} for {s_trans} /{n:<6d}{color.END}    ", end = '\r')
+            
+            suspects = set(map(lambda s: s - trans, cand.beacons))
 
             common = known_beacons & suspects
             if len(common) >= 12:
-                home = Signature(common)
-                dest = Signature(map(lambda b: b + trans, common))
+                """
+                The points in `common` are the same in both coordinate systems.
+                To get the coordinate for the unknown scanner, we know that we
+                have to go from root -> common point -> unknown
 
-                found = cand.with_coord(home.nexus() - dest.nexus())
-                debug(f"  {color.RED}MATCH FOUND{color.END} - {known} -- {found}")
+                    # take the common point in known coordinate, e.g.
+                    # root->common point
+                    home = common[0]
+
+                    # restore dest to foreign coordinate, e.g. unknown ->
+                    # common point
+                    dest = home + trans
+                    
+                    # dest points away from the unknown scanner so reverse it
+                    # and add it to home... turns out we didn't need to do
+                    # these calculations!
+                    coord = home - dest
+                          = home - home - trans
+                          = -trans
+                """
+                found = cand.with_coord(-trans)
+                debug(f"  {color.RED}MATCH FOUND{color.END} - {known.id} -- {found.id} @ {found.coord} #{n}")
                 return found
 
     return None
-
-
-def part_one(scanners):
-
-    scanmap = { s.id: s for s in scanners }
-
-    known = scanmap[0]
-    del scanmap[0]
-
-    found = [known]
-
-    while len(scanmap) > 0:
-        for scanid, scanner in list(scanmap.items()):
-            match = find_match(known, scanner)
-            if match:
-                known = Scanner(0, set(chain(known, match)))
-                del scanmap[scanid]
-                found.append(match)
-                break
-
-    debug(f"known world contained by {known}")
-
-    return len(list(known))
-
-
-def part_two(scanners):
-    return 'n/a'
 
 
 def main():
@@ -226,14 +205,31 @@ def main():
 
     found = [known]
 
+    start = time()
+    found_times = [start]
+
     while len(scanmap) > 0:
-        debug(f"Scanners left: {len(scanmap):>3d} / {' '.join(map(str, scanmap))}")
+        if debug():
+            diff = "-"
+            if len(found_times) > 1:
+                a, b = found_times[-2:]
+                diff = f"{b - a:.3f}s"
+            since = f"{time() - start:.3f}s"
+            s_timing = f"{color.FAINT}[{since:>10}/{diff:<10}]{color.END}"
+
+            s_done = color.GREEN + color.FAINT + (' '.join(map(lambda s: str(s.id), found))) + color.END
+            s_left = ' '.join(map(str, scanmap))
+
+            print(f"{s_timing} Progress: {s_done} | {s_left}") 
+
         for scanid, scanner in list(scanmap.items()):
             match = find_match(known, scanner)
             if match:
                 known = Scanner(0, set(chain(known, match)))
                 del scanmap[scanid]
                 found.append(match)
+                if debug():
+                    found_times.append(time())
                 break
 
     debug(f"known world contained by {known}")
