@@ -5,6 +5,8 @@ from common import read_input, clean, color, debug, ident, combine
 import re
 import math
 
+import multiprocessing as mp
+
 from dataclasses import dataclass
 from itertools import chain, combinations, product
 from time import time
@@ -150,7 +152,6 @@ def find_match(known, candidate):
     """
     n = 0
     known_beacons = set(known.beacons)
-    current = f"{known.id:>2} → {candidate.id:<2}"
 
     # make sure we go over all rotations
     for cand in map(lambda rot: candidate.rotate(rot), rotations()):
@@ -158,9 +159,6 @@ def find_match(known, candidate):
         # try to map the unknown points to the known world so `c - trans = k`
         for trans in set( c - k for k, c in product(known.beacons, cand.beacons) ):
             n += 1
-            if debug():
-                s_trans = f"({trans.x:>+5d},{trans.y:>+5d},{trans.z:>+5d})"
-                print(f"  {color.FAINT}checking {current} for {s_trans} /{n:<6d}{color.END}    ", end = '\r')
             
             suspects = set(map(lambda s: s - trans, cand.beacons))
 
@@ -186,14 +184,15 @@ def find_match(known, candidate):
                           = home - home - trans
                           = -trans
                 """
-                found = cand.with_coord(-trans)
+                found = cand.with_coord( -trans )
                 debug(f"  {color.RED}MATCH FOUND{color.END} - {known.id} -- {found.id} @ {found.coord} #{n}")
-                return found
+                return (candidate.id, found)
 
-    return None
+    return (candidate.id, None)
 
 
 def main():
+    start = time()
     content = read_input(clean)
 
     scanners = parse_input(content)
@@ -205,32 +204,36 @@ def main():
 
     found = [known]
 
-    start = time()
-    found_times = [start]
 
-    while len(scanmap) > 0:
+    def print_progress():
         if debug():
-            diff = "-"
-            if len(found_times) > 1:
-                a, b = found_times[-2:]
-                diff = f"{b - a:.3f}s"
             since = f"{time() - start:.3f}s"
-            s_timing = f"{color.FAINT}[{since:>10}/{diff:<10}]{color.END}"
+            s_timing = f"{color.FAINT}[{since:>10}]{color.END}"
 
             s_done = color.GREEN + color.FAINT + (' '.join(map(lambda s: str(s.id), found))) + color.END
             s_left = ' '.join(map(str, scanmap))
 
             print(f"{s_timing} Progress: {s_done} | {s_left}") 
 
-        for scanid, scanner in list(scanmap.items()):
-            match = find_match(known, scanner)
-            if match:
-                known = Scanner(0, set(chain(known, match)))
-                del scanmap[scanid]
-                found.append(match)
-                if debug():
-                    found_times.append(time())
-                break
+    debug(f"using {mp.cpu_count()} processors...")
+
+    while len(scanmap) > 0:
+        print_progress()
+
+        with mp.Pool(mp.cpu_count()) as pool:
+
+            results = [ pool.apply(find_match, args=(known, scanner)) for scanner in scanmap.values() ]
+            pool.close()
+            pool.join()
+
+            for scanid, match in results:
+                debug(f"found result #{scanid} = {match}")
+                if match:
+                    known = Scanner(0, set(chain(known, match)))
+                    del scanmap[scanid]
+                    found.append(match)
+
+    print_progress()
 
     debug(f"known world contained by {known}")
 
