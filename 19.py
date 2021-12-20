@@ -2,8 +2,8 @@
 
 from common import read_input, clean, color, debug, ident, combine
 
+import os
 import re
-import math
 
 import multiprocessing as mp
 
@@ -186,9 +186,9 @@ def find_match(known, candidate):
                 """
                 found = cand.with_coord( -trans )
                 debug(f"  {color.RED}MATCH FOUND{color.END} - {known.id} -- {found.id} @ {found.coord} #{n}")
-                return (candidate.id, found)
+                return found
 
-    return (candidate.id, None)
+    return None
 
 
 def main():
@@ -215,23 +215,30 @@ def main():
 
             print(f"{s_timing} Progress: {s_done} | {s_left}") 
 
-    debug(f"using {mp.cpu_count()} processors...")
+    cpu_count = len(os.sched_getaffinity(0))
+
+    debug(f"using {cpu_count} processes...")
 
     while len(scanmap) > 0:
         print_progress()
 
-        with mp.Pool(mp.cpu_count()) as pool:
+        matches = []
+        def collect(match):
+            if match:
+                matches.append(match)
 
-            results = [ pool.apply(find_match, args=(known, scanner)) for scanner in scanmap.values() ]
+        with mp.Pool(cpu_count) as pool:
+
+            for scanner in scanmap.values():
+                pool.apply_async(find_match, args=(known, scanner), callback=collect)
+
             pool.close()
             pool.join()
 
-            for scanid, match in results:
-                debug(f"found result #{scanid} = {match}")
-                if match:
-                    known = Scanner(0, set(chain(known, match)))
-                    del scanmap[scanid]
-                    found.append(match)
+        known = Scanner(0, set(chain(known, *matches)))
+        found += matches
+        for match in matches:
+            del scanmap[match.id]
 
     print_progress()
 
