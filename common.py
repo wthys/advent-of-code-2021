@@ -62,7 +62,11 @@ class Area:
     y: range
 
     def __contains__(self, pos):
-        return pos.x in self.x and pos.y in self.y
+        match pos:
+            case Point(x, y) | (x, y) | [x, y]:
+                return x in self.x and y in self.y
+            case _:
+                return False
 
     def __iter__(self):
         return map(lambda pos: Point(*pos), product(self.x, self.y))
@@ -115,16 +119,26 @@ def sign(value, func=None):
     else:
         return value/abs(value)
 
+def not_none(value):
+    return value is not None
 
-def neejbers(x, y, /, diagonal = None):
-    if diagonal is None or diagonal:
-        return [
-                (x - 1, y - 1), (x + 0, y - 1), (x + 1, y - 1),
-                (x - 1, y + 0),                 (x + 1, y + 0),
-                (x - 1, y + 1), (x + 0, y + 1), (x + 1, y + 1)
-                ]
+
+def neejbers(x, y, /, diagonal = None, center = None):
+    if center:
+        center = (x, y)
     else:
-        return [ (x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1) ]
+        center = None
+
+    if diagonal is None or diagonal:
+        return list(filter(not_none, [
+                (x - 1, y - 1), (x + 0, y - 1), (x + 1, y - 1),
+                (x - 1, y + 0),     center    , (x + 1, y + 0),
+                (x - 1, y + 1), (x + 0, y + 1), (x + 1, y + 1)
+                ]))
+    else:
+        return list(filter(not_none, [
+            (x, y - 1), (x - 1, y), center, (x + 1, y), (x, y + 1)
+            ]))
 
 
 def interpolate_points(start, end):
