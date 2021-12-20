@@ -28,16 +28,21 @@ def parse_input(content):
     return enhancer, image
 
 
-def enhance(image, algo):
-    img = defaultdict(lambda:'.')
+def enhance(image, algo, n):
+    if algo[0] == '#':
+        dflt = [algo[0],algo[-1]][n % 2]
+    else:
+        dflt = '.'
+    img = defaultdict(lambda:dflt)
     area = area_from_image(image)
 
     trans = { '.' : '0', '#' : '1' }
     
     for y in area.y:
         for x in area.x:
-            binary = "".join( trans[image[(i, j)]] for i, j in neejbers(x, y, center = True))
+            binary = "".join( trans[image[pos]] for pos in neejbers(x, y, center = True))
             idx = int(binary, 2)
+
             img[(x, y)] = algo[idx]
 
     return img
@@ -58,18 +63,26 @@ def main():
     print(f"part 2: {part_two(content)}")
 
 
-def print_image(image):
+def print_image(image, last_line=None):
     if not debug():
         return
 
     area = area_from_image(image)
 
+    if last_line is None:
+        last_line = len(area.y)
+
     topbot = "+" + "-" * len(area.x[1:-1]) + "+"
 
     print(topbot)
+    n = 0
     for y in area.y[1:-1]:
-        row = "".join( image[(x, y)] for x in area.x[1:-1] )
-        print(f"|{row}|")
+        if n < last_line:
+            row = "".join( image[(x, y)] for x in area.x[1:-1] )
+            print(f"|{row}|")
+        else:
+            break
+        n += 1
     print(topbot)
 
 
@@ -79,21 +92,28 @@ def part_one(content):
     debug(f"original:")
     print_image(image)
 
-    image = enhance(image, algo)
+    image = enhance(image, algo, 0)
     debug(f"after first enhance:")
     print_image(image)
 
-    image = enhance(image, algo)
+    image = enhance(image, algo, 1)
     debug(f"after second enhance:")
     print_image(image)
 
     return sum( 1 for c in image.values() if c == '#' )
 
 
-
-
 def part_two(content):
-    return 'n/a'
+    algo, image = parse_input(content)
+
+    for i in range(50):
+        image = enhance(image, algo, i)
+        debug(f"after enhance {i+1}")
+        print_image(image, 5)
+
+    print_image(image)
+
+    return sum( 1 for c in image.values() if c == '#' )
 
 
 if __name__ == "__main__":
