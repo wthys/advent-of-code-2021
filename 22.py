@@ -3,6 +3,7 @@
 from common import read_input, combine, clean, debug, color
 
 import re
+import heapq
 
 from dataclasses import dataclass
 from collections import defaultdict
@@ -124,15 +125,26 @@ class Border:
     idx: int
 
 def subdivide_intervals(intervals):
-    borders = sorted(
-        chain.from_iterable(
-            [
-                Border(min(interval), True, idx),
-                Border(max(interval)+1, False, idx)
-            ] for idx, interval in enumerate(intervals) 
-        ),
-        key=lambda b: (b.value, [0,1][b.start])
-        )
+    #borders = sorted(
+    #    chain.from_iterable(
+    #        [
+    #            Border(min(interval), True, idx),
+    #            Border(max(interval)+1, False, idx)
+    #        ] for idx, interval in enumerate(intervals) 
+    #    ),
+    #    key=lambda b: (b.value, [0,1][b.start])
+    #    )
+
+    borders = heapq.merge(
+            *map(
+                lambda cpl: [
+                    Border(min(cpl[1]), True, cpl[0]),
+                    Border(max(cpl[1]), False, cpl[0])
+                    ],
+                enumerate(intervals)
+            ),
+            key = lambda b: (b.value, [0,1][b.start])
+            )
 
     open_intervals = set()
 
@@ -148,7 +160,7 @@ def subdivide_intervals(intervals):
     return
 
 
-def subdivide_cuboids(cuboids, remove=None):
+def subdivide_cuboids(cuboids, remove=None, n=None):
 
     cubs = cuboids
     if remove:
@@ -158,11 +170,12 @@ def subdivide_cuboids(cuboids, remove=None):
     yrs = map(lambda c: c.y, cubs)
     zrs = map(lambda c: c.z, cubs)
 
-    #xrs, yrs, zrs = zip(*[(c.x, c.y, c.z) for c in cubs])
-    try:
-        debug(f"#xrs={len(xrs)}, #yrs={len(yrs)}, #zrs={len(zrs)}")
-    except TypeError:
-        pass
+    xrs, yrs, zrs = zip(*map(lambda c: (c.x, c.y, c.z),cubs))
+    debug(f"{n}")
+    #try:
+    #    debug(f"#n={n}, xrs={len(xrs)}, #yrs={len(yrs)}, #zrs={len(zrs)}")
+    #except TypeError:
+    #    pass
 
     for xr, yr, zr in product(subdivide_intervals(xrs), subdivide_intervals(yrs), subdivide_intervals(zrs)):
         comm = xr[0] & yr[0] & zr[0]
@@ -185,15 +198,15 @@ def part_two(actions):
         if action.on:
             grid = chain(grid, [action.cuboid])
         else:
-            grid = subdivide_cuboids(grid, action.cuboid)
+            grid = subdivide_cuboids(grid, action.cuboid, f"{n}/{total}")
 
-        if debug():
-            progress = 80 * n // total
-            bar = color.GREEN + '=' * progress + color.RED + '-' * (80 - progress) + color.END
-            print(f"  {color.FAINT}|{color.END}{bar}{color.FAINT}| {n}/{total}      {color.END}", end = '\r')
+        #if debug():
+        #    progress = 80 * n // total
+        #    bar = color.GREEN + '=' * progress + color.RED + '-' * (80 - progress) + color.END
+        #    print(f"  {color.FAINT}|{color.END}{bar}{color.FAINT}| {n}/{total} {color.END}", end = '\n')
 
     if actions[-1].on:
-        return sum(map(len, subdivide_cuboids(grid)))
+        return sum(map(len, subdivide_cuboids(grid, n=len(actions))))
     else:
         return sum(map(len, grid))
 
