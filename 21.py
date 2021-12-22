@@ -1,15 +1,11 @@
 #/usr/bin/env python3
 
-from common import read_input, combine, clean, debug, color
+from common import read_input, combine, clean, debug
 
-import multiprocessing as mp
-import operator
-import os
 import re
 
 from dataclasses import dataclass
 from collections import Counter
-from functools import reduce, cache
 from itertools import islice, product, chain, pairwise
 
 
@@ -41,8 +37,6 @@ class Die:
         return list(islice(self._source, n))
 
 
-
-
 @dataclass(frozen=True)
 class Player:
     space: int
@@ -68,77 +62,26 @@ def part_one(players):
     while players[(n - 1) % np].score < 1000:
         roll ,= die()
         player = players[n % np].move(roll)
-        debug(f"Player {(n % np) + 1} : {roll:>3} → {player.space + 1:2d} 🏆={player.score}")
+
+        if debug():
+            sroll = ""
+            match roll:
+                case 103:
+                    sroll = "100+1+2"
+                case 200:
+                    sroll = "99+100+1"
+                case _:
+                    mid = roll//3
+                    sroll = f"{mid - 1}+{mid}+{mid + 1}"
+
+            print(f"Player {(n % np) + 1} : {sroll:>9} → {player.space + 1:2d}  score={player.score}")
         players[n % np] = player
         n += 1
 
     return players[n % np].score * n * 3
 
 
-@dataclass(frozen=True)
-class Result:
-    winner: int
-    state: list[int]
-    rolls: list[int]
-
-    def done(self):
-        return self.winner is not None
-
-
-@cache
-def move_player(space, roll):
-    newpos = (space + roll) % 10
-    return newpos
-
-def play_game(players, die, threshold):
-    np = len(players)
-    players = [p.space for p in players]
-    scores = [0 for _ in players]
-
-    rolls = []
-
-    while True:
-        for p, roll in enumerate(die(np)):
-            if roll is None:
-                return Result(None, None, None)
-            rolls.append(roll)
-            players[p] = move_player(players[p], roll)
-            scores[p] += 1 + players[p]
-            if scores[p] >= threshold:
-                return Result(p, scores, rolls)
-
-
-def winners(players, turns):
-    np = len(players)
-    nr = turns
-    freqs = Counter(map(sum, product([1,2,3], repeat=3)))
-    wins = [0 for _ in range(np)]
-
-    def collect(result):
-        if result.done():
-            inter = map(lambda r: freqs[r], result.rolls)
-            wins[result.winner] += reduce(operator.mul, inter, 1)
-
-    for x in [1]:
-    #with mp.Pool(mp.cpu_count()) as pool:
-
-        for reality in product(freqs, repeat=turns):
-            def deter():
-                yield from reality
-                yield None
-
-            #pool.apply_async(play_game, (players, Die(deter()), 21), callback=collect)
-            collect(play_game(players, Die(deter()), 21))
-            if debug():
-                print(f"  {color.FAINT}{turns:>3}:{color.END} {' - '.join(map(str, wins))}", end = '\r')
-
-    #    pool.close()
-    #    pool.join()
-
-    return wins
-
-
-def winners2(players):
+def part_two(players):
     turns = [ list() for _ in players ]
 
     freqs = Counter(map(sum, product([1,2,3], repeat=3)))
@@ -157,114 +100,30 @@ def winners2(players):
             if turn_counter.total() == 0:
                 break
 
+        # remove the initial player, it was not an actual move
         turns[p].pop(0)
 
-    wins = [ 0 for _ in players ]
 
     all_turns = chain.from_iterable(zip(*turns))
-    losses = 1
 
-    def wl(ctr):
+    def winloss(ctr, win):
         wls = Counter()
         for p, n in ctr.items():
             wls[p.score >= 21] += n
 
-        return wls[False], wls[True]
+        return wls[win]
 
-    for t, (prev, ctr) in enumerate(pairwise(all_turns)):
-        #if t < len(players):
-        #    continue
-        #prev = all_turns[t - 1]
-        p = t % len(players)
-        other = wl(prev)
-        my = wl(ctr)
-        debug(f" Player {(p+1) % 2 + 1}: wins {other[1]} - {other[0]} losses")
+    wins = [ 0 for _ in players ]
+    # to make this work for more players, we need something like nwise
+    for t, (prev, curr) in enumerate(pairwise(all_turns)):
+        p = t % 2
+        other_losses = winloss(prev, False)
+        my_wins = winloss(curr, True)
 
-        losses *= other[0]
-
-        wins[p] += my[1] * other[0]
+        wins[p] += my_wins * other_losses
         
 
         debug(f"  turn #{t-1:<2}: {wins}")
-
-    return max(wins)
-
-
-
-
-
-
-            
-
-
-
-
-class Split:
-    def __init__(self, players, turn):
-        self.players = list(players)
-        self.turn = turn
-        self.children = dict()
-        self.done = sum(map(lambda s: s.score >= 21, players)) > 0
-
-    def resolve(self):
-        if self.done:
-            return 0
-
-        active = self.turn % len(self.players)
-        for roll in Counter( sum(dice) for dice in product([1,2,3], repeat=3) ):
-           players = self.players[:]
-           players[active] = players[active].move(roll)
-           self.children[roll] = Split(players, self.turn + 1)
-
-
-        return len(self.children)
-
-    def wins(self, multiplier):
-        wins = list(map(lambda p: p.score >= 21), self.players)
-        if self.done:
-            return wins
-
-        for roll, split in self.children.items():
-            mult = multiplier(roll)
-            for idx, w in enumerate(split.wins()):
-                wins[idx] += mult * w
-
-        return wins
-
-    def depth(self):
-        if self.done:
-            return 0
-
-        if len(self.children) == 0:
-            return 0
-
-        return 1 + max( child.depth() for child in self.children.values() )
-
-    def __iter__(self):
-        yield from self.children.values()
-
-    def __str__(self):
-        return f"Split(p={self.players}, t={self.turn}, d={[0,1][self.done]})"
-
-
-def part_two(players):
-
-    return winners2(players)
-
-    return 'n/a'
-
-    old_wins = None
-    wins = [0 for _ in players]
-    turn = 1
-
-    while (sum(wins) == 0 or old_wins != wins) and turn <= 1000:
-        old_wins = wins[:]
-
-        wins = winners(players[:], turn)
-        if debug():
-            print(f"  {color.FAINT}{turn:>6}: {wins}", end = "\r")
-        turn += 1
-    
 
     return max(wins)
 
