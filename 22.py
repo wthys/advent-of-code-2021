@@ -3,13 +3,16 @@
 from common import read_input, combine, clean, debug, color
 
 import re
-import heapq
 
 from dataclasses import dataclass
 from collections import defaultdict
 from itertools import product, chain, pairwise, tee
 from time import time
 from datetime import timedelta
+
+
+def range2str(rng):
+    return f"{min(rng)}..{max(rng)}"
 
 
 @dataclass(frozen=True)
@@ -21,16 +24,16 @@ class Cuboid:
     def __iter__(self):
         yield from product(self.x, self.y, self.z)
 
-    def __contains__(self, pos):
-        match pos:
+    def __contains__(self, other):
+        match other:
             case Cuboid(_, _, _):
-                xl, xh = min(pos.x), max(pos.x)
+                xl, xh = min(other.x), max(other.x)
                 inx = (xh >= min(self.x) and xl <= max(self.x))
 
-                yl, yh = min(pos.y), max(pos.y)
+                yl, yh = min(other.y), max(other.y)
                 iny = (yh >= min(self.y) and yl <= max(self.y))
 
-                zl, zh = min(pos.z), max(pos.z)
+                zl, zh = min(other.z), max(other.z)
                 inz = (zh >= min(self.z) and zl <= max(self.z))
 
                 return inx and iny and inz
@@ -40,38 +43,14 @@ class Cuboid:
                 return False
 
     def __str__(self):
-        return f"Cuboid(x={min(self.x)}..{max(self.x)},y={min(self.y)}..{max(self.y)},z={min(self.z)}..{max(self.z)})"
+        xr = range2str(self.x)
+        yr = range2str(self.y)
+        zr = range2str(zelf.z)
+
+        return f"Cuboid(x={xr},y={yr},z={zr})"
 
     def __len__(self):
         return len(self.x) * len(self.y) * len(self.z)
-
-    def __and__(self, other):
-        if self not in other:
-            return Cuboid(range(0), range(0), range(0))
-        oxl, oxh = min(other.x), max(other.x)
-        oyl, oyh = min(other.y), max(other.y)
-        ozl, ozh = min(other.z), max(other.z)
-
-        xl, xh = min(self.x), max(self.x)
-        yl, yh = min(self.y), max(self.y)
-        zl, zh = min(self.z), max(self.z)
-
-        xr = range(max(xl, oxl), min(xh, oxh))
-        yr = range(max(yl, oyl), min(yh, oyh))
-        zr = range(max(zl, ozl), min(zh, ozh))
-
-        return Cuboid(xr, yr, zr)
-
-    def __le__(self, other):
-        oxl, oxh = min(other.x), max(other.x)
-        oyl, oyh = min(other.y), max(other.y)
-        ozl, ozh = min(other.z), max(other.z)
-
-        xl, xh = min(self.x), max(self.x)
-        yl, yh = min(self.y), max(self.y)
-        zl, zh = min(self.z), max(self.z)
-
-        return (oxl <= xl and xh <= oxh) and (oyl <= yl and yh <= oyh) and (ozl <= zl and zh <= ozh)
 
 
 @dataclass(frozen=True)
@@ -79,9 +58,9 @@ class LabelledCuboid(Cuboid):
     labels: set[int]
 
     def __str__(self):
-        xr = f"{min(self.x)}..{max(self.x)}"
-        yr = f"{min(self.y)}..{max(self.y)}"
-        zr = f"{min(self.z)}..{max(self.z)}"
+        xr = range2str(self.x)
+        yr = range2str(self.y)
+        zr = range2str(zelf.z)
 
         return f"LabelledCuboid(x={xr},y={yr},z={zr},labels={self.labels})"
 
@@ -126,7 +105,6 @@ def part_one(actions):
 
     for action in actions:
         n = action.apply(grid, init_area)
-        debug(f"made {n} change with {action}")
 
     on = sum( grid[pos] for pos in init_area )
 
