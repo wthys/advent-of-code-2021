@@ -9,32 +9,7 @@ from dataclasses import dataclass
 from collections import defaultdict
 from itertools import product, chain, pairwise, tee
 from time import time
-
-
-def split_range(orig, intruder):
-    """
-    orig:     olo                               ohi
-               |----------|-------------|--------|
-    intruder:            ilo           ihi
-
-
-    left:   olo -> min(ilo,ohi), e.g. empty when ilo <= olo
-    right:  max(olo, ihi) -> ohi, e.g. empty when ihi >= ohi
-    middle: min(ilo, ohi) -> max(ihi, olo), e.g. empty when
-    """
-    olo, ohi = min(orig), max(orig)
-    ilo, ihi = min(intruder), max(intruder)
-
-    if ohi < ilo:
-        return orig, range(0), range(0)
-    elif olo > ihi:
-        return range(0), range(0), orig
-
-    return (
-            range(olo,           min(ilo, ohi)),
-            range(min(ilo, ohi), max(ihi, olo)),
-            range(max(ilo, ohi), ohi),
-            )
+from datetime import timedelta
 
 
 @dataclass(frozen=True)
@@ -99,6 +74,16 @@ class Cuboid:
         return (oxl <= xl and xh <= oxh) and (oyl <= yl and yh <= oyh) and (ozl <= zl and zh <= ozh)
 
 
+@dataclass(frozen=True)
+class LabelledCuboid(Cuboid):
+    labels: set[int]
+
+    def __str__(self):
+        xr = f"{min(self.x)}..{max(self.x)}"
+        yr = f"{min(self.y)}..{max(self.y)}"
+        zr = f"{min(self.z)}..{max(self.z)}"
+
+        return f"LabelledCuboid(x={xr},y={yr},z={zr},labels={self.labels})"
 
 
 @dataclass(frozen=True)
@@ -151,34 +136,27 @@ def part_one(actions):
 @dataclass
 class Border:
     value: int
-    start: bool
+    start: int
     idx: int
+
+    def __lt__(self, other):
+        return (self.value, self.start, self.idx) < (other.value, other.start, other.idx)
+
 
 def subdivide_intervals(intervals):
     borders = sorted(
         chain.from_iterable(
             (
                 [
-                    Border(min(interval), True, idx),
-                    Border(max(interval)+1, False, idx)
+                    Border(min(interval), 1, idx),
+                    Border(max(interval)+1, 0, idx)
                 ] for idx, interval in enumerate(intervals) 
             )
-        ),
-        key=lambda b: (b.value, [0,1][b.start])
+        )
         )
 
-    #borders = heapq.merge(
-    #        *map(
-    #            lambda cpl: [
-    #                Border(min(cpl[1]), True, cpl[0]),
-    #                Border(max(cpl[1]), False, cpl[0])
-    #                ],
-    #            enumerate(intervals)
-    #        ),
-    #        key = lambda b: (b.value, [0,1][b.start])
-    #        )
-
     open_intervals = set()
+    max_open = 0
 
     for a, b in pairwise(borders):
         if a.start:
@@ -186,67 +164,49 @@ def subdivide_intervals(intervals):
         else:
             open_intervals.discard(a.idx)
 
-        if a.value != b.value:
+        if len(open_intervals) > max_open:
+            max_open = len(open_intervals)
+
+        if len(open_intervals) > 0 and b.value - a.value > 0:
             yield (set(open_intervals), range(a.value, b.value))
+
+    debug(f"max open intervals: {max_open}")
 
     return
 
 
-def subdivide_cuboids(cuboids, remove=None, n=None):
-
-    cubs = cuboids
-    if remove:
-        cubs = chain([remove], cuboids)
-
-    xrs, yrs, zrs = tee(cubs, 3)
+def subdivide_cuboids(cuboids):
+    xrs, yrs, zrs = tee(cuboids, 3)
 
     xrs = subdivide_intervals(map(lambda c: c.x, xrs))
     yrs = subdivide_intervals(map(lambda c: c.y, yrs))
     zrs = subdivide_intervals(map(lambda c: c.z, zrs))
 
-    #xrs, yrs, zrs = zip(*map(lambda c: (c.x, c.y, c.z),cubs))
-    debug(f"{n}")
-    #try:
-    #    debug(f"#n={n}, xrs={len(xrs)}, #yrs={len(yrs)}, #zrs={len(zrs)}")
-    #except TypeError:
-    #    pass
-
-
-    nn = 0
-
     for xr, yr, zr in product(xrs, yrs, zrs):
-        nn += 1
         comm = xr[0] & yr[0] & zr[0]
-        if len( comm ) > 0 and not( 0 in comm ):
-            if debug():
-                print(f"  {n}: {nn}  ", end='\r')
-            yield Cuboid(xr[1], yr[1], zr[1])
+        if len( comm ) > 0:
+            yield LabelledCuboid(xr[1], yr[1], zr[1], comm)
 
     return
 
-    
-    
-
 
 def part_two(actions):
+    cuboids = subdivide_cuboids(map(lambda a: a.cuboid, actions))
+    start = time()
 
     total = 0
+    for idx, cuboid in enumerate(cuboids):
+        labels = sorted(cuboid.labels)
 
-    for idx, action in enumerate(actions):
-        if action.on:
-            removed = set()
-            for future_action in actions[idx+1:]:
-                if action.cuboid in future_action.cuboid:
-                    if action.cuboid <= future_action.cuboid:
-                        break
-                    # no difference in on or off, on will be counted with the
-                    # next iteration, off will be removed anyway
-                    for p in (action.cuboid & future_action.cuboid):
-                        points.discard(p)
-        debug(f"  {idx:>3} {action} : {total:,} points")
+        if len(labels) > 0 and actions[labels[-1]].on:
+            total += len(cuboid)
+            if debug():
+                elapsed = timedelta(seconds=time() - start)
+                print(f"  {color.FAINT}[{elapsed}]{color.END} {total:>20,} cubes (added {len(cuboid):>15,}) #{idx:,}", end = '\r')
+
+    debug(f"  {total:>20,} cubes! {' '*25}")
 
     return total
-
 
 
 def main():
