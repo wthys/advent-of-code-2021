@@ -70,7 +70,6 @@ class Cuboid:
     def __len__(self):
         return len(self.x) * len(self.y) * len(self.z)
 
-
     def __and__(self, other):
         if self not in other:
             return Cuboid(range(0), range(0), range(0))
@@ -87,6 +86,17 @@ class Cuboid:
         zr = range(max(zl, ozl), min(zh, ozh))
 
         return Cuboid(xr, yr, zr)
+
+    def __le__(self, other):
+        oxl, oxh = min(other.x), max(other.x)
+        oyl, oyh = min(other.y), max(other.y)
+        ozl, ozh = min(other.z), max(other.z)
+
+        xl, xh = min(self.x), max(self.x)
+        yl, yh = min(self.y), max(self.y)
+        zl, zh = min(self.z), max(self.z)
+
+        return (oxl <= xl and xh <= oxh) and (oyl <= yl and yh <= oyh) and (ozl <= zl and zh <= ozh)
 
 
 
@@ -224,14 +234,15 @@ def part_two(actions):
 
     for idx, action in enumerate(actions):
         if action.on:
-            points = set(action.cuboid)
+            removed = set()
             for future_action in actions[idx+1:]:
                 if action.cuboid in future_action.cuboid:
+                    if action.cuboid <= future_action.cuboid:
+                        break
                     # no difference in on or off, on will be counted with the
                     # next iteration, off will be removed anyway
                     for p in (action.cuboid & future_action.cuboid):
                         points.discard(p)
-            total += len(points)
         debug(f"  {idx:>3} {action} : {total:,} points")
 
     return total
