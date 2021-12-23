@@ -71,6 +71,26 @@ class Cuboid:
         return len(self.x) * len(self.y) * len(self.z)
 
 
+    def __and__(self, other):
+        if self not in other:
+            return Cuboid(range(0), range(0), range(0))
+        oxl, oxh = min(other.x), max(other.x)
+        oyl, oyh = min(other.y), max(other.y)
+        ozl, ozh = min(other.z), max(other.z)
+
+        xl, xh = min(self.x), max(self.x)
+        yl, yh = min(self.y), max(self.y)
+        zl, zh = min(self.z), max(self.z)
+
+        xr = range(max(xl, oxl), min(xh, oxh))
+        yr = range(max(yl, oyl), min(yh, oyh))
+        zr = range(max(zl, ozl), min(zh, ozh))
+
+        return Cuboid(xr, yr, zr)
+
+
+
+
 @dataclass(frozen=True)
 class Action:
     on: bool
@@ -200,25 +220,22 @@ def subdivide_cuboids(cuboids, remove=None, n=None):
 
 def part_two(actions):
 
-    grid = []
+    total = 0
 
-    total = len(actions)
-
-    for n, action in enumerate(actions):
+    for idx, action in enumerate(actions):
         if action.on:
-            grid = chain(grid, [action.cuboid])
-        else:
-            grid = subdivide_cuboids(grid, action.cuboid, f"{n}/{total}")
+            points = set(action.cuboid)
+            for future_action in actions[idx+1:]:
+                if action.cuboid in future_action.cuboid:
+                    # no difference in on or off, on will be counted with the
+                    # next iteration, off will be removed anyway
+                    for p in (action.cuboid & future_action.cuboid):
+                        points.discard(p)
+            total += len(points)
+        debug(f"  {idx:>3} {action} : {total:,} points")
 
-        #if debug():
-        #    progress = 80 * n // total
-        #    bar = color.GREEN + '=' * progress + color.RED + '-' * (80 - progress) + color.END
-        #    print(f"  {color.FAINT}|{color.END}{bar}{color.FAINT}| {n}/{total} {color.END}", end = '\n')
+    return total
 
-    if actions[-1].on:
-        return sum(map(len, subdivide_cuboids(grid, n=len(actions))))
-    else:
-        return sum(map(len, grid))
 
 
 def main():
