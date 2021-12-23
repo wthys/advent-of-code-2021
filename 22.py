@@ -7,7 +7,7 @@ import heapq
 
 from dataclasses import dataclass
 from collections import defaultdict
-from itertools import product, chain, pairwise, pairwise
+from itertools import product, chain, pairwise, tee
 from time import time
 
 
@@ -125,26 +125,28 @@ class Border:
     idx: int
 
 def subdivide_intervals(intervals):
-    #borders = sorted(
-    #    chain.from_iterable(
-    #        [
-    #            Border(min(interval), True, idx),
-    #            Border(max(interval)+1, False, idx)
-    #        ] for idx, interval in enumerate(intervals) 
-    #    ),
-    #    key=lambda b: (b.value, [0,1][b.start])
-    #    )
-
-    borders = heapq.merge(
-            *map(
-                lambda cpl: [
-                    Border(min(cpl[1]), True, cpl[0]),
-                    Border(max(cpl[1]), False, cpl[0])
-                    ],
-                enumerate(intervals)
-            ),
-            key = lambda b: (b.value, [0,1][b.start])
+    borders = sorted(
+        chain.from_iterable(
+            (
+                [
+                    Border(min(interval), True, idx),
+                    Border(max(interval)+1, False, idx)
+                ] for idx, interval in enumerate(intervals) 
             )
+        ),
+        key=lambda b: (b.value, [0,1][b.start])
+        )
+
+    #borders = heapq.merge(
+    #        *map(
+    #            lambda cpl: [
+    #                Border(min(cpl[1]), True, cpl[0]),
+    #                Border(max(cpl[1]), False, cpl[0])
+    #                ],
+    #            enumerate(intervals)
+    #        ),
+    #        key = lambda b: (b.value, [0,1][b.start])
+    #        )
 
     open_intervals = set()
 
@@ -166,20 +168,28 @@ def subdivide_cuboids(cuboids, remove=None, n=None):
     if remove:
         cubs = chain([remove], cuboids)
 
-    xrs = map(lambda c: c.x, cubs)
-    yrs = map(lambda c: c.y, cubs)
-    zrs = map(lambda c: c.z, cubs)
+    xrs, yrs, zrs = tee(cubs, 3)
 
-    xrs, yrs, zrs = zip(*map(lambda c: (c.x, c.y, c.z),cubs))
+    xrs = subdivide_intervals(map(lambda c: c.x, xrs))
+    yrs = subdivide_intervals(map(lambda c: c.y, yrs))
+    zrs = subdivide_intervals(map(lambda c: c.z, zrs))
+
+    #xrs, yrs, zrs = zip(*map(lambda c: (c.x, c.y, c.z),cubs))
     debug(f"{n}")
     #try:
     #    debug(f"#n={n}, xrs={len(xrs)}, #yrs={len(yrs)}, #zrs={len(zrs)}")
     #except TypeError:
     #    pass
 
-    for xr, yr, zr in product(subdivide_intervals(xrs), subdivide_intervals(yrs), subdivide_intervals(zrs)):
+
+    nn = 0
+
+    for xr, yr, zr in product(xrs, yrs, zrs):
+        nn += 1
         comm = xr[0] & yr[0] & zr[0]
         if len( comm ) > 0 and not( 0 in comm ):
+            if debug():
+                print(f"  {n}: {nn}  ", end='\r')
             yield Cuboid(xr[1], yr[1], zr[1])
 
     return
