@@ -17,7 +17,7 @@ def register(reg, throw = None):
     return False
 
 
-@dataclass(frozen=False)
+@dataclass
 class Memory:
     input: list[int] = field(default_factory=list)
     registers: dict[str] = field(default_factory=lambda: defaultdict(int))
@@ -151,11 +151,6 @@ def main():
             if verbose:
                 print(f"{color.FAINT}{alu.memory}{color.END}")
 
-    print(f"part 1: {part_one(program)}")
-    print(f"part 2: {part_two(program)}")
-                
-
-def part_one(program):
     def is_serial(data):
         mem = Memory(input=list(data))
         try:
@@ -163,7 +158,7 @@ def part_one(program):
             debug(f"  {''.join(map(str, data))} => {mem}")
             return mem['z'] == 0
         except Exception as e:
-            debug(f"  {''.join(map(str, data))} => {mem} || {e} ||")
+            debug(f"  {''.join(map(str, data))} => {mem} {color.BOLD}{color.RED}--> {e}{color.END} ||")
             return False
 
     digits = range(9, 0, -1)
@@ -191,10 +186,10 @@ def part_one(program):
 
     for data in product(d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14):
         data = list(data)
-        for i, value in enumerate(data):
+        for idx, value in enumerate(data):
             match value:
                 case (src, add):
-                    data[i] = data[src - 1] + add
+                    data[idx] = data[src - 1] + add
                 case _:
                     pass
 
@@ -203,11 +198,10 @@ def part_one(program):
 
     debug(f"found {len(serials)} serial numbers")
 
-    return ''.join(map(str, max(serials)))
-
-
-def part_two(program):
-    return 'n/a'
+    largest = ''.join(map(str, max(serials)))
+    print(f"part 1: {largest}")
+    smallest = ''.join(map(str, min(serials)))
+    print(f"part 2: {smallest}")
 
 
 if __name__ == "__main__":
