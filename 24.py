@@ -156,19 +156,54 @@ def main():
                 
 
 def part_one(program):
-
-    for data in product([9,8,7,6,5,4,3,2,1], repeat=2):
+    def is_serial(data):
         mem = Memory(input=list(data))
         try:
-            program(mem)
-        except ValueError as e:
-            debug(f"  ==> {data} failed with {e}")
-        except ZeroDivisionError as e:
-            debug(f"  ==> {data} failed with {e}")
-        else:
-            debug(f"  ==> {data} resulted in {mem}")
-    
-    return 'n/a'
+            program(mem, False)
+            debug(f"  {''.join(map(str, data))} => {mem}")
+            return mem['z'] == 0
+        except Exception as e:
+            debug(f"  {''.join(map(str, data))} => {mem} || {e} ||")
+            return False
+
+    digits = range(9, 0, -1)
+
+    #for data in product([9], [9], digits):
+    #    is_serial(data)
+
+    d1 = [ n for n in digits if n + 5 in digits ]
+    d2 = [ n for n in digits if n + 4 in digits ]
+    d3 = [ n for n in digits if n - 8 in digits ]
+    d4 = [ n for n in digits if n + 1 in digits ]
+    d5 = [ (4,  1) ]
+    d6 = [ n for n in digits if n - 7 in digits ]
+    d7 = [ (6, -7) ]
+    d8 = [ n for n in digits if n - 3 in digits ]
+    d9 = [ n for n in digits if n - 5 in digits ]
+    d10= [ (9, -5) ]
+    d11= [ (8, -3) ]
+    d12= [ (3, -8) ]
+    d13= [ (2,  4) ]
+    d14= [ (1,  5) ]
+
+
+    serials = []
+
+    for data in product(d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14):
+        data = list(data)
+        for i, value in enumerate(data):
+            match value:
+                case (src, add):
+                    data[i] = data[src - 1] + add
+                case _:
+                    pass
+
+        if is_serial(data):
+            serials.append(data)
+
+    debug(f"found {len(serials)} serial numbers")
+
+    return ''.join(map(str, max(serials)))
 
 
 def part_two(program):
